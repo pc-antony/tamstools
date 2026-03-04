@@ -24,6 +24,10 @@ const getFlowAndRelated = async (api, { type, id }) => {
     flow = flowData;
   } else {
     const sourceFlows = (await api.get(`/flows?source_id=${id}`)).data;
+    if (!Array.isArray(sourceFlows)) {
+      console.error("No valid Flows found.");
+      return { flow: null, relatedFlows: [] };
+    }
     const filteredSourceFlows = sourceFlows.filter(
       (sourceFlow) => !shouldExcludeFlow(sourceFlow)
     );
@@ -39,7 +43,7 @@ const getFlowAndRelated = async (api, { type, id }) => {
     relatedFlowQueue.push(...filteredSourceFlows.slice(1).map(({ id }) => id));
   }
 
-  if (flow.flow_collection) {
+  if (Array.isArray(flow.flow_collection)) {
     relatedFlowQueue.push(...flow.flow_collection.map(({ id }) => id));
   }
 
@@ -180,6 +184,17 @@ const getSegmentationTimerange = async (flows, api) => {
 
 const getOmakaseData = async (api, { type, id, timerange }) => {
   const { flow, relatedFlows } = await getFlowAndRelated(api, { type, id });
+
+  if (!flow) {
+    return {
+      flow: null,
+      relatedFlows: [],
+      flowSegments: {},
+      maxTimerange: null,
+      timerange: null,
+    };
+  }
+
   const timerangeValidFlows = parseAndFilterFlows([flow, ...relatedFlows]);
 
   const maxTimerange = getMaxTimerange(timerangeValidFlows);

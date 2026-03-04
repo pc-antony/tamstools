@@ -14,7 +14,10 @@ export class TAMSThumbnailUtil {
 
     const lowestQualityImageFlow = imageFlows.reduce<ImageFlow | undefined>(
       (lowestQualityFlow: undefined | ImageFlow, currentFlow: ImageFlow) => {
-        if (lowestQualityFlow === undefined) {
+        if (!currentFlow.essence_parameters) {
+          return lowestQualityFlow;
+        }
+        if (lowestQualityFlow === undefined || !lowestQualityFlow.essence_parameters) {
           return currentFlow;
         }
 

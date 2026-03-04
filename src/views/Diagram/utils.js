@@ -28,7 +28,7 @@ const getEntities = async (api, path, graph = {}) => {
   }
 
   // Handle collected_by
-  if (resp.collected_by) {
+  if (Array.isArray(resp.collected_by)) {
     const type = resp.source_id ? "flows" : "sources";
     const collectedPromises = resp.collected_by
       .filter((collection) => !graph[`/${type}/${collection}`])
@@ -37,7 +37,7 @@ const getEntities = async (api, path, graph = {}) => {
   }
 
   // Handle flow collections
-  if (resp.flow_collection) {
+  if (Array.isArray(resp.flow_collection)) {
     const flowPromises = resp.flow_collection
       .filter((collection) => !graph[`/flows/${collection.id}`])
       .map((collection) => getEntities(api, `/flows/${collection.id}`, graph));
@@ -45,7 +45,7 @@ const getEntities = async (api, path, graph = {}) => {
   }
 
   // Handle source collections
-  if (resp.source_collection) {
+  if (Array.isArray(resp.source_collection)) {
     const sourcePromises = resp.source_collection
       .filter((collection) => !graph[`/sources/${collection.id}`])
       .map((collection) => getEntities(api, `/sources/${collection.id}`, graph));
@@ -122,12 +122,13 @@ export const getElements = async (api, path) => {
   // Create list of Elements representing the nodes alone
   const nodes = entities.map((node) => {
     const type = node.source_id ? "flow" : "source";
-    const classes = [type, node.format.split(":")[3]];
+    const formatType = node.format?.split(":")[3] ?? "unknown";
+    const classes = [type, formatType];
     if (node.container) classes.push("container");
     return {
       data: {
         id: `${type}s/${node.id}`,
-        label: `${type.toUpperCase()} (${node.format.split(":")[3]})\n\nid: ${
+        label: `${type.toUpperCase()} (${formatType})\n\nid: ${
           node.id
         }\n\ndesc: ${node.description}\n\nlabel: ${node.label}`,
       },

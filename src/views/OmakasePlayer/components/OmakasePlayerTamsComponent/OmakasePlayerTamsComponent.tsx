@@ -220,22 +220,25 @@ function buildTimeline(
   markerLaneMap.set(segmentationMarker.id, segmentationLaneId);
 
   if (thumbnailFlow) {
-    const vttUrl = TAMSThumbnailUtil.generateThumbnailVttBlob(
-      childFlowsSegments.get(thumbnailFlow.id)!,
-      omakasePlayer.video.getDuration() + markerOffset,
-      markerOffset
-    );
+    const thumbnailSegments = childFlowsSegments.get(thumbnailFlow.id);
+    if (thumbnailSegments) {
+      const vttUrl = TAMSThumbnailUtil.generateThumbnailVttBlob(
+        thumbnailSegments,
+        omakasePlayer.video.getDuration() + markerOffset,
+        markerOffset
+      );
 
-    const thumbnailLaneId = "thumbanil-lane";
+      const thumbnailLaneId = "thumbanil-lane";
 
-    timelineBuilder.addThumbnailLane({
-      id: thumbnailLaneId,
-      vttUrl: vttUrl,
-      style: TIMELINE_LANE_STYLE,
-      description: "Thumbnails",
-    });
+      timelineBuilder.addThumbnailLane({
+        id: thumbnailLaneId,
+        vttUrl: vttUrl,
+        style: TIMELINE_LANE_STYLE,
+        description: "Thumbnails",
+      });
 
-    omakasePlayer.timeline!.loadThumbnailVttFileFromUrl(vttUrl);
+      omakasePlayer.timeline!.loadThumbnailVttFileFromUrl(vttUrl);
+    }
   }
 
   childFlows.forEach((flow) => {
@@ -389,7 +392,7 @@ const OmakasePlayerTamsComponent = React.memo(
 
     const timelineBuilderFlows = useMemo(() => {
       const flows = childFlows ? [...childFlows] : [];
-      if (flowsSegments.get(flow.id)!.length > 0) {
+      if ((flowsSegments.get(flow.id) ?? []).length > 0) {
         flows.unshift(flow);
       }
       return flows;
@@ -452,9 +455,11 @@ const OmakasePlayerTamsComponent = React.memo(
             const selectedMarker = segmentationLane.getSelectedMarker();
             selectedMarker && segmentationLane.toggleMarker(selectedMarker.id);
           });
-        const laneSelectedMarker = lane!.getSelectedMarker();
-        if (laneSelectedMarker !== selectedMarker) {
-          lane!.toggleMarker(selectedMarker.id);
+        if (lane) {
+          const laneSelectedMarker = lane.getSelectedMarker();
+          if (laneSelectedMarker !== selectedMarker) {
+            lane.toggleMarker(selectedMarker.id);
+          }
         }
       } else {
         segementationLanes.forEach((segmentationLane) => {

@@ -24,7 +24,7 @@ export const OmakaseHlsPlayer = () => {
   if (!isLoading && !flow) {
     return <Box textAlign="center">{`No valid ${type} found`}</Box>;
   }
-  if (!isLoading) {
+  if (!isLoading && flowSegments) {
     const hasSegments =
       Object.values(flowSegments).find((segments) => segments.length > 0) !=
       undefined;
