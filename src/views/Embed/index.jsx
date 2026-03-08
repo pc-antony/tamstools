@@ -61,7 +61,16 @@ const Embed = () => {
       flowsBySource.get(flow.source_id).push(flow);
     }
 
+    // Build set of source IDs that are collected by a multi-source
+    const collectedIds = new Set();
+    for (const source of sources) {
+      if (source.collected_by?.length) {
+        collectedIds.add(source.id);
+      }
+    }
+
     return sources
+      .filter((source) => !collectedIds.has(source.id))
       .map((source) => {
         const sourceFlows = flowsBySource.get(source.id) || [];
         let isGrowing = false;
