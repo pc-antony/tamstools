@@ -23,9 +23,52 @@
   color: #e9ecef;
 }
 
+.embed-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .embed-loading {
   font-size: 11px;
   color: #687078;
+}
+
+.embed-config-btn {
+  background: none;
+  border: none;
+  color: #687078;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.embed-config-btn:hover {
+  color: #e9ecef;
+}
+
+.embed-back-btn {
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #d1d5db;
+  background: #232f3e;
+  border: 1px solid #3a4a5c;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.embed-back-btn:hover {
+  background: #2c3e54;
+  border-color: #539fe5;
+  color: #fff;
+}
+
+.embed-config {
+  padding: 8px;
 }
 
 .embed-error {

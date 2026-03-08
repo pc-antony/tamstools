@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { useApi } from "@/hooks/useApi";
 import { useSources } from "@/hooks/useSources";
 import useStoreManager from "@/stores/useStoreManager";
+import StoreManager from "@/views/StoreManager";
 import paginationFetcher from "@/utils/paginationFetcher";
 import { parseTimerange } from "@/utils/timerange";
 import "./Embed.css";
@@ -43,6 +44,8 @@ const useFlowsWithTimerange = () => {
 const Embed = () => {
   const cuttingRoomTamsId = useStoreManager((s) => s.getCuttingRoomTamsId());
   const activeStore = useStoreManager((s) => s.getActiveStore());
+  const needsConfig = !activeStore || !cuttingRoomTamsId;
+  const [showConfig, setShowConfig] = useState(needsConfig);
   const { sources, isLoading: sourcesLoading, error: sourcesError } = useSources();
   const { flows, isLoading: flowsLoading, error: flowsError } = useFlowsWithTimerange();
 
@@ -110,18 +113,18 @@ const Embed = () => {
   const isLoading = sourcesLoading || flowsLoading;
   const error = sourcesError || flowsError;
 
-  if (!activeStore) {
+  if (showConfig) {
     return (
-      <div className="embed-container">
-        <div className="embed-empty">No store configured. Open tamstool settings to add a TAMS store.</div>
-      </div>
-    );
-  }
-
-  if (!cuttingRoomTamsId) {
-    return (
-      <div className="embed-container">
-        <div className="embed-empty">No CuttingRoom TAMS ID configured. Edit the store in tamstool settings.</div>
+      <div className="embed-container embed-config">
+        <div className="embed-header">
+          <span className="embed-title">Store Configuration</span>
+          {!needsConfig && (
+            <button className="embed-back-btn" onClick={() => setShowConfig(false)}>
+              Back
+            </button>
+          )}
+        </div>
+        <StoreManager />
       </div>
     );
   }
@@ -130,7 +133,16 @@ const Embed = () => {
     <div className="embed-container">
       <div className="embed-header">
         <span className="embed-title">TAMS Sources</span>
-        {isLoading && <span className="embed-loading">Loading...</span>}
+        <div className="embed-header-right">
+          {isLoading && <span className="embed-loading">Loading...</span>}
+          <button
+            className="embed-config-btn"
+            onClick={() => setShowConfig(true)}
+            title="Store settings"
+          >
+            &#9881;
+          </button>
+        </div>
       </div>
       {error && (
         <div className="embed-error">Failed to connect to TAMS store</div>
