@@ -124,8 +124,10 @@ const Embed = () => {
   const enrichedSources = useMemo(() => {
     if (!sources || !flows) return [];
 
+    const flowsById = new Map();
     const flowsBySource = new Map();
     for (const flow of flows) {
+      flowsById.set(flow.id, flow);
       if (!flow.source_id) continue;
       if (!flowsBySource.has(flow.source_id)) {
         flowsBySource.set(flow.source_id, []);
@@ -141,23 +143,35 @@ const Embed = () => {
       }
     }
 
+    // Collect all flows for a source, including child flows from flow_collection
+    const getAllFlows = (sourceId) => {
+      const direct = flowsBySource.get(sourceId) || [];
+      const all = [...direct];
+      for (const flow of direct) {
+        if (flow.flow_collection) {
+          for (const ref of flow.flow_collection) {
+            const child = flowsById.get(ref.id);
+            if (child) all.push(child);
+          }
+        }
+      }
+      return all;
+    };
+
     return sources
       .filter((source) => !collectedIds.has(source.id))
       .map((source) => {
-        const sourceFlows = flowsBySource.get(source.id) || [];
+        const allFlows = getAllFlows(source.id);
         let isGrowing = false;
         let durationMs = null;
         let fps = null;
 
-        for (const flow of sourceFlows) {
+        for (const flow of allFlows) {
           const fr = flow.essence_parameters?.frame_rate;
           if (!fps && fr?.numerator) {
             fps = fr.numerator / (fr.denominator || 1);
           }
           if (!flow.timerange) continue;
-          if (sourceFlows === (flowsBySource.get(sources[0]?.id) || [])) {
-            console.log("embed flow timerange sample:", flow.id, typeof flow.timerange, flow.timerange);
-          }
           const parsed = parseTimerange(flow.timerange);
           if (parsed.start !== null && parsed.end === null) {
             isGrowing = true;
