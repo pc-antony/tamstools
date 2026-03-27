@@ -119,10 +119,10 @@ const useSourceFlowDetails = (displayedSources) => {
     { revalidateOnFocus: false, revalidateIfStale: false }
   );
 
-  // Step 2: Poll timerange. A flow is "growing" if segments_updated is recent.
-  // Once a flow stops growing, cache its result and stop polling it.
-  const GROWING_THRESHOLD_MS = 15_000;
-  const closedRef = useRef(new Map()); // sourceId → { timerange, durationMs }
+  // Step 2: Poll timerange. Detect "growing" by comparing timerange end across
+  // polls — if it moves, the flow is still growing. Once stable, cache and stop polling.
+  const prevEndRef = useRef(new Map());   // sourceId → previous timerange end (BigInt)
+  const closedRef = useRef(new Map());    // sourceId → { durationMs } (stable, no more polling)
 
   const openSourceIds = useMemo(() => {
     if (!flowMap) return [];
@@ -138,31 +138,33 @@ const useSourceFlowDetails = (displayedSources) => {
     api.endpoint && flowMap && pollKey ? [api.endpoint, "flow-timeranges", pollKey] : null,
     async () => {
       const results = new Map();
-      const now = Date.now();
       await Promise.all(
         openSourceIds.map(async (sourceId) => {
           const entry = flowMap.get(sourceId);
           if (!entry) return;
           try {
             const res = await api.get(`/flows/${entry.flowId}?include_timerange=true`);
-            const flow = res.data;
-            const tr = flow?.timerange;
+            const tr = res.data?.timerange;
             if (!tr) return;
 
             const parsed = parseTimerange(tr);
-            const segUpdated = flow.segments_updated ? new Date(flow.segments_updated).getTime() : 0;
-            const isGrowing = (now - segUpdated) < GROWING_THRESHOLD_MS;
             let durationMs = null;
             if (parsed.start !== null && parsed.end !== null) {
               durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
             }
 
-            results.set(sourceId, { isGrowing, durationMs });
+            const prevEnd = prevEndRef.current.get(sourceId);
+            const currentEnd = parsed.end;
+            const isGrowing = prevEnd === undefined || (currentEnd !== null && currentEnd !== prevEnd);
 
-            // Cache closed flows permanently
+            prevEndRef.current.set(sourceId, currentEnd);
+
+            // If end didn't move since last poll, flow is closed
             if (!isGrowing) {
-              closedRef.current.set(sourceId, { isGrowing: false, durationMs });
+              closedRef.current.set(sourceId, { durationMs });
             }
+
+            results.set(sourceId, { isGrowing, durationMs });
           } catch { /* skip */ }
         })
       );
