@@ -238,7 +238,7 @@ const Embed = () => {
           {enrichedSources.some((s) => s.isGrowing) && (
             <span className="embed-title-dot" />
           )}
-          TAMS Sources
+          {activeStore?.name || "TAMS Sources"}
         </span>
         <div className="embed-header-right">
           {isLoading && <span className="embed-loading">Loading...</span>}
