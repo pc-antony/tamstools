@@ -124,6 +124,12 @@ const Embed = () => {
   const enrichedSources = useMemo(() => {
     if (!sources || !flows) return [];
 
+    if (flows.length > 0) {
+      const sample = flows[0];
+      console.log("embed flow sample keys:", Object.keys(sample));
+      console.log("embed flow sample timerange:", sample.timerange, "format:", sample.format);
+    }
+
     const flowsById = new Map();
     const flowsBySource = new Map();
     for (const flow of flows) {
