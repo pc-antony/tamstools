@@ -80,8 +80,10 @@ const formatDate = (dateStr) => {
 };
 
 /**
- * For each displayed source, resolve the video flow ID and fps once,
- * then poll only timerange every 5 seconds for duration / growing status.
+ * For each displayed source, fetch its video flow to get fps and growing status.
+ * A flow is "growing" when metadata_updated is absent — the recorder PUTs the
+ * flow with a bounded timerange on finalization, which sets metadata_updated.
+ * Growing flows are re-polled every 5s; closed flows fetch duration once.
  */
 const useSourceFlowDetails = (displayedSources) => {
   const api = useApi();
@@ -91,16 +93,21 @@ const useSourceFlowDetails = (displayedSources) => {
     [displayedSources]
   );
 
-  // Step 1: Resolve video flow ID + fps per source (only fetch new ones)
-  const flowMapRef = useRef(new Map());
+  // Step 1: Resolve video flow per source — fps + growing status from list endpoint.
+  // Re-poll every 5s so we detect when a growing flow becomes closed.
+  const flowInfoRef = useRef(new Map()); // sourceId → { flowId, fps, isGrowing }
 
-  const { data: flowMap } = useSWR(
-    api.endpoint && sourceIds ? [api.endpoint, "flow-map", sourceIds] : null,
+  const { data: flowInfo } = useSWR(
+    api.endpoint && sourceIds ? [api.endpoint, "flow-info", sourceIds] : null,
     async () => {
-      const newSources = displayedSources.filter((s) => !flowMapRef.current.has(s.id));
-      if (newSources.length > 0) {
+      // Only fetch sources we haven't seen, or that were still growing
+      const toFetch = displayedSources.filter((s) => {
+        const cached = flowInfoRef.current.get(s.id);
+        return !cached || cached.isGrowing;
+      });
+      if (toFetch.length > 0) {
         await Promise.all(
-          newSources.map(async (source) => {
+          toFetch.map(async (source) => {
             try {
               const videoSubSource = source.source_collection?.find((s) => s.role === "video");
               const videoSourceId = videoSubSource?.id || source.id;
@@ -109,85 +116,102 @@ const useSourceFlowDetails = (displayedSources) => {
               if (!flow) return;
               const fr = flow.essence_parameters?.frame_rate;
               const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
-              flowMapRef.current.set(source.id, { flowId: flow.id, fps });
+              const isGrowing = !flow.metadata_updated;
+              flowInfoRef.current.set(source.id, { flowId: flow.id, fps, isGrowing });
             } catch { /* skip */ }
           })
         );
       }
-      return new Map(flowMapRef.current);
+      return new Map(flowInfoRef.current);
     },
-    { revalidateOnFocus: false, revalidateIfStale: false }
+    { refreshInterval: 5000 }
   );
 
-  // Step 2: Poll timerange. Detect "growing" by comparing timerange end across
-  // polls — if it moves, the flow is still growing. Once stable, cache and stop polling.
-  const prevEndRef = useRef(new Map());   // sourceId → previous timerange end (BigInt)
-  const closedRef = useRef(new Map());    // sourceId → { durationMs } (stable, no more polling)
+  // Step 2: Fetch duration via include_timerange — only for flows we haven't cached yet.
+  const durationRef = useRef(new Map()); // sourceId → durationMs
 
-  const openSourceIds = useMemo(() => {
-    if (!flowMap) return [];
-    return [...flowMap.keys()].filter((id) => !closedRef.current.has(id));
-  }, [flowMap, closedRef.current.size]);
+  const needDuration = useMemo(() => {
+    if (!flowInfo) return [];
+    return [...flowInfo.keys()].filter((id) => !durationRef.current.has(id));
+  }, [flowInfo, durationRef.current.size]);
 
-  const pollKey = useMemo(() => {
-    if (!openSourceIds.length) return "";
-    return openSourceIds.sort().join(",");
-  }, [openSourceIds]);
+  const durationKey = useMemo(() => {
+    if (!needDuration.length) return "";
+    return needDuration.sort().join(",");
+  }, [needDuration]);
 
-  const { data: freshResults, isLoading } = useSWR(
-    api.endpoint && flowMap && pollKey ? [api.endpoint, "flow-timeranges", pollKey] : null,
+  const { data: durations, isLoading } = useSWR(
+    api.endpoint && flowInfo && durationKey ? [api.endpoint, "flow-durations", durationKey] : null,
     async () => {
-      const results = new Map();
       await Promise.all(
-        openSourceIds.map(async (sourceId) => {
-          const entry = flowMap.get(sourceId);
+        needDuration.map(async (sourceId) => {
+          const entry = flowInfo.get(sourceId);
           if (!entry) return;
           try {
             const res = await api.get(`/flows/${entry.flowId}?include_timerange=true`);
             const tr = res.data?.timerange;
             if (!tr) return;
-
             const parsed = parseTimerange(tr);
-            let durationMs = null;
             if (parsed.start !== null && parsed.end !== null) {
-              durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
+              const ms = Number((parsed.end - parsed.start) / NANOS_PER_MS);
+              // Only cache duration for closed flows
+              if (!entry.isGrowing) {
+                durationRef.current.set(sourceId, ms);
+              }
+              return; // duration is in durationRef or freshly computed
             }
+          } catch { /* skip */ }
+        })
+      );
+      // Return a snapshot so useMemo reacts
+      return new Map(durationRef.current);
+    },
+    { revalidateOnFocus: false, revalidateIfStale: false }
+  );
 
-            const prevEnd = prevEndRef.current.get(sourceId);
-            const currentEnd = parsed.end;
-            const isGrowing = prevEnd === undefined || (currentEnd !== null && currentEnd !== prevEnd);
+  // For growing flows, we need to re-fetch duration each poll
+  const growingIds = useMemo(() => {
+    if (!flowInfo) return [];
+    return [...flowInfo.entries()].filter(([, v]) => v.isGrowing).map(([id]) => id);
+  }, [flowInfo]);
 
-            prevEndRef.current.set(sourceId, currentEnd);
+  const growingKey = useMemo(() => growingIds.sort().join(","), [growingIds]);
 
-            // If end didn't move since last poll, flow is closed
-            if (!isGrowing) {
-              closedRef.current.set(sourceId, { durationMs });
+  const { data: growingDurations } = useSWR(
+    api.endpoint && flowInfo && growingKey ? [api.endpoint, "growing-durations", growingKey] : null,
+    async () => {
+      const results = new Map();
+      await Promise.all(
+        growingIds.map(async (sourceId) => {
+          const entry = flowInfo.get(sourceId);
+          if (!entry) return;
+          try {
+            const res = await api.get(`/flows/${entry.flowId}?include_timerange=true`);
+            const tr = res.data?.timerange;
+            if (!tr) return;
+            const parsed = parseTimerange(tr);
+            if (parsed.start !== null && parsed.end !== null) {
+              results.set(sourceId, Number((parsed.end - parsed.start) / NANOS_PER_MS));
             }
-
-            results.set(sourceId, { isGrowing, durationMs });
           } catch { /* skip */ }
         })
       );
       return results;
     },
-    { refreshInterval: openSourceIds.length > 0 ? 5000 : 0 }
+    { refreshInterval: growingIds.length > 0 ? 5000 : 0 }
   );
 
   const flowDetails = useMemo(() => {
-    if (!flowMap) return null;
+    if (!flowInfo) return null;
     const combined = new Map();
-    for (const [sourceId, { fps }] of flowMap) {
-      const cached = closedRef.current.get(sourceId);
-      const fresh = freshResults?.get(sourceId);
-      const detail = fresh || cached || {};
-      combined.set(sourceId, {
-        fps,
-        isGrowing: detail.isGrowing || false,
-        durationMs: detail.durationMs || null,
-      });
+    for (const [sourceId, { fps, isGrowing }] of flowInfo) {
+      const durationMs = isGrowing
+        ? growingDurations?.get(sourceId) ?? null
+        : durationRef.current.get(sourceId) ?? null;
+      combined.set(sourceId, { fps, isGrowing, durationMs });
     }
     return combined;
-  }, [flowMap, freshResults, closedRef.current.size]);
+  }, [flowInfo, durations, growingDurations]);
 
   return { flowDetails, isLoading };
 };
