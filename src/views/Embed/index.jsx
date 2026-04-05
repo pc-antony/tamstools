@@ -215,7 +215,18 @@ const Embed = () => {
     });
   }, [displayedSources, flowDetails]);
 
-  const handleOpen = (source) => {
+  const [shiftHeld, setShiftHeld] = useState(false);
+
+  useEffect(() => {
+    const down = (e) => { if (e.key === "Shift") setShiftHeld(true); };
+    const up = (e) => { if (e.key === "Shift") setShiftHeld(false); };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, []);
+
+  const handleOpen = (source, e) => {
+    const refresh = e?.shiftKey;
     const crl = `crl://tams/${cuttingRoomTamsId}/${source.id}`;
     const message = {
       action: "open_asset",
@@ -226,6 +237,7 @@ const Embed = () => {
           status: source.isGrowing ? "growing" : "ready",
           title: source.label || source.id,
         },
+        ...(refresh && { regenerateProxies: true }),
       },
     };
     window.parent.postMessage(message, "*");
@@ -305,8 +317,8 @@ const Embed = () => {
             ) : source.durationMs > 0 ? (
               <span className="embed-row-duration">{formatDuration(source.durationMs)}</span>
             ) : null}
-            <button className="embed-open-btn" onClick={() => handleOpen(source)}>
-              Open
+            <button className="embed-open-btn" onClick={(e) => handleOpen(source, e)}>
+              {shiftHeld ? "NEW" : "Open"}
             </button>
           </div>
         ))}
