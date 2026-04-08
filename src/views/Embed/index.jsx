@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useApi } from "@/hooks/useApi";
 import { useSources } from "@/hooks/useSources";
@@ -83,71 +83,122 @@ const formatDate = (dateStr) => {
  * For each displayed source, fetch its video flow to get fps, duration,
  * and growing status. Growing status is read from the flow's tags
  * (not the source's — source tags are stale after recording stops).
- * Closed flows are cached permanently; growing flows are re-polled every 5s.
+ *
+ * On initial load, all sources are fetched once. Sources that are growing
+ * are tracked by flow ID and re-polled every 5s until they close.
  */
 const useSourceFlowDetails = (displayedSources) => {
   const api = useApi();
-  const [flowDetails, setFlowDetails] = useState(null);
+  const [flowDetails, setFlowDetails] = useState(new Map());
   const [isLoading, setIsLoading] = useState(false);
-  const closedRef = useRef(new Map());
 
-  const fetchDetails = useCallback(async () => {
+  // Permanent cache for closed sources — never re-fetched
+  const closedRef = useRef(new Set());
+  // Map of sourceId → videoFlowId for growing sources that need polling
+  const growingRef = useRef(new Map());
+
+  // Fetch all uncached sources when the source list changes
+  useEffect(() => {
     if (!api.endpoint || displayedSources.length === 0) return;
+    let cancelled = false;
 
-    const toFetch = displayedSources.filter((s) => !closedRef.current.has(s.id));
-    if (toFetch.length === 0) return;
+    const fetchAll = async () => {
+      const toFetch = displayedSources.filter((s) => !closedRef.current.has(s.id));
+      if (toFetch.length === 0) return;
 
-    setIsLoading(true);
-    await Promise.all(
-      toFetch.map(async (source) => {
-        try {
-          const videoSubSource = source.source_collection?.find((s) => s.role === "video");
-          const videoSourceId = videoSubSource?.id || source.id;
-          const listRes = await api.get(`/flows?source_id=${videoSourceId}&limit=1&_t=${Date.now()}`);
-          const flow = listRes.data?.[0];
-          if (!flow) return;
+      setIsLoading(true);
+      await Promise.all(
+        toFetch.map(async (source) => {
+          try {
+            const videoSubSource = source.source_collection?.find((s) => s.role === "video");
+            const videoSourceId = videoSubSource?.id || source.id;
+            const listRes = await api.get(`/flows?source_id=${videoSourceId}&limit=1`);
+            const flow = listRes.data?.[0];
+            if (!flow) return;
 
-          const fr = flow.essence_parameters?.frame_rate;
-          const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
-          const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
+            const fr = flow.essence_parameters?.frame_rate;
+            const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
+            const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
 
-          let durationMs = null;
-          const detailRes = await api.get(`/flows/${flow.id}?include_timerange=true`);
-          const tr = detailRes.data?.timerange;
-          if (tr) {
-            const parsed = parseTimerange(tr);
-            if (parsed.start !== null && parsed.end !== null) {
-              durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
+            let durationMs = null;
+            const detailRes = await api.get(`/flows/${flow.id}?include_timerange=true`);
+            const tr = detailRes.data?.timerange;
+            if (tr) {
+              const parsed = parseTimerange(tr);
+              if (parsed.start !== null && parsed.end !== null) {
+                durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
+              }
             }
-          }
 
-          const result = { fps, isGrowing, durationMs };
-          if (!isGrowing) {
-            closedRef.current.set(source.id, result);
-          }
+            if (isGrowing) {
+              growingRef.current.set(source.id, flow.id);
+            } else {
+              closedRef.current.add(source.id);
+              growingRef.current.delete(source.id);
+            }
 
-          // Update state per-source so UI updates incrementally
-          setFlowDetails((prev) => {
-            const next = new Map(prev ?? closedRef.current);
-            next.set(source.id, result);
-            return next;
-          });
-        } catch { /* skip */ }
-      })
-    );
-    setIsLoading(false);
+            if (!cancelled) {
+              setFlowDetails((prev) => {
+                const next = new Map(prev);
+                next.set(source.id, { fps, isGrowing, durationMs });
+                return next;
+              });
+            }
+          } catch { /* skip */ }
+        })
+      );
+      if (!cancelled) setIsLoading(false);
+    };
+
+    fetchAll();
+    return () => { cancelled = true; };
   }, [api, displayedSources]);
 
-  // Initial fetch when sources change
+  // Poll growing flows by their flow ID every 5s
   useEffect(() => {
-    fetchDetails();
-  }, [fetchDetails]);
+    if (!api.endpoint) return;
 
-  // Poll every 5s for sources not yet closed
-  useEffect(() => {
-    const id = setInterval(fetchDetails, 5000);
+    const poll = async () => {
+      const entries = Array.from(growingRef.current.entries());
+      if (entries.length === 0) return;
+
+      await Promise.all(
+        entries.map(async ([sourceId, flowId]) => {
+          try {
+            const res = await api.get(`/flows/${flowId}?include_timerange=true&_t=${Date.now()}`);
+            const flow = res.data;
+            if (!flow) return;
+
+            const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
+
+            let durationMs = null;
+            const tr = flow.timerange;
+            if (tr) {
+              const parsed = parseTimerange(tr);
+              if (parsed.start !== null && parsed.end !== null) {
+                durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
+              }
+            }
+
+            if (!isGrowing) {
+              closedRef.current.add(sourceId);
+              growingRef.current.delete(sourceId);
+            }
+
+            setFlowDetails((prev) => {
+              const next = new Map(prev);
+              const existing = next.get(sourceId);
+              next.set(sourceId, { ...existing, isGrowing, durationMs });
+              return next;
+            });
+          } catch { /* skip */ }
+        })
+      );
+    };
+
+    const id = setInterval(poll, 5000);
     return () => clearInterval(id);
-  }, [fetchDetails]);
+  }, [api]);
 
   return { flowDetails, isLoading };
 };
