@@ -81,8 +81,7 @@ const formatDate = (dateStr) => {
 
 /**
  * For each displayed source, fetch its video flow to get fps and growing status.
- * A flow is "growing" when metadata_updated is absent — the recorder PUTs the
- * flow with a bounded timerange on finalization, which sets metadata_updated.
+ * A flow is "growing" when its flow_status is "ingesting".
  * Growing flows are re-polled every 5s; closed flows fetch duration once.
  */
 const useSourceFlowDetails = (displayedSources) => {
@@ -115,7 +114,7 @@ const useSourceFlowDetails = (displayedSources) => {
 
               const fr = flow.essence_parameters?.frame_rate;
               const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
-              const isGrowing = !flow.metadata_updated;
+              const isGrowing = flow.flow_status === "ingesting";
 
               let durationMs = null;
               const detailRes = await api.get(`/flows/${flow.id}?include_timerange=true`);
