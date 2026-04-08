@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useApi } from "@/hooks/useApi";
 import { useSources } from "@/hooks/useSources";
@@ -87,64 +87,67 @@ const formatDate = (dateStr) => {
  */
 const useSourceFlowDetails = (displayedSources) => {
   const api = useApi();
-
-  const sourceIds = useMemo(
-    () => displayedSources.map((s) => s.id).sort().join(","),
-    [displayedSources]
-  );
-
-  // Closed sources are cached permanently — never re-fetched
+  const [flowDetails, setFlowDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const closedRef = useRef(new Map());
 
-  const { data: flowDetails, isLoading } = useSWR(
-    api.endpoint && sourceIds ? [api.endpoint, "flow-details", sourceIds] : null,
-    async () => {
-      const fresh = new Map();
-      const toFetch = displayedSources.filter((s) => !closedRef.current.has(s.id));
-      if (toFetch.length > 0) {
-        await Promise.all(
-          toFetch.map(async (source) => {
-            try {
-              const videoSubSource = source.source_collection?.find((s) => s.role === "video");
-              const videoSourceId = videoSubSource?.id || source.id;
-              const listRes = await api.get(`/flows?source_id=${videoSourceId}&limit=1`);
-              const flow = listRes.data?.[0];
-              if (!flow) return;
+  const fetchDetails = useCallback(async () => {
+    if (!api.endpoint || displayedSources.length === 0) return;
 
-              const fr = flow.essence_parameters?.frame_rate;
-              const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
-              const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
+    const toFetch = displayedSources.filter((s) => !closedRef.current.has(s.id));
+    if (toFetch.length === 0) return;
 
-              let durationMs = null;
-              const detailRes = await api.get(`/flows/${flow.id}?include_timerange=true`);
-              const tr = detailRes.data?.timerange;
-              if (tr) {
-                const parsed = parseTimerange(tr);
-                if (parsed.start !== null && parsed.end !== null) {
-                  durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
-                }
-              }
+    setIsLoading(true);
+    await Promise.all(
+      toFetch.map(async (source) => {
+        try {
+          const videoSubSource = source.source_collection?.find((s) => s.role === "video");
+          const videoSourceId = videoSubSource?.id || source.id;
+          const listRes = await api.get(`/flows?source_id=${videoSourceId}&limit=1`);
+          const flow = listRes.data?.[0];
+          if (!flow) return;
 
-              const result = { fps, isGrowing, durationMs };
-              fresh.set(source.id, result);
+          const fr = flow.essence_parameters?.frame_rate;
+          const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
+          const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
 
-              if (!isGrowing) {
-                closedRef.current.set(source.id, result);
-              }
-            } catch { /* skip */ }
-          })
-        );
-      }
+          let durationMs = null;
+          const detailRes = await api.get(`/flows/${flow.id}?include_timerange=true`);
+          const tr = detailRes.data?.timerange;
+          if (tr) {
+            const parsed = parseTimerange(tr);
+            if (parsed.start !== null && parsed.end !== null) {
+              durationMs = Number((parsed.end - parsed.start) / NANOS_PER_MS);
+            }
+          }
 
-      // Merge: closed cache (permanent) + fresh results (growing/new)
-      const combined = new Map(closedRef.current);
-      for (const [id, val] of fresh) {
-        combined.set(id, val);
-      }
-      return combined;
-    },
-    { refreshInterval: 5000 }
-  );
+          const result = { fps, isGrowing, durationMs };
+          if (!isGrowing) {
+            closedRef.current.set(source.id, result);
+          }
+
+          // Update state per-source so UI updates incrementally
+          setFlowDetails((prev) => {
+            const next = new Map(prev ?? closedRef.current);
+            next.set(source.id, result);
+            return next;
+          });
+        } catch { /* skip */ }
+      })
+    );
+    setIsLoading(false);
+  }, [api, displayedSources]);
+
+  // Initial fetch when sources change
+  useEffect(() => {
+    fetchDetails();
+  }, [fetchDetails]);
+
+  // Poll every 5s for sources not yet closed
+  useEffect(() => {
+    const id = setInterval(fetchDetails, 5000);
+    return () => clearInterval(id);
+  }, [fetchDetails]);
 
   return { flowDetails, isLoading };
 };
