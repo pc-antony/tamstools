@@ -79,10 +79,26 @@ const formatDate = (dateStr) => {
   });
 };
 
+const GROWING_STALE_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Check if a flow is actively growing: must have flow_status "ingesting"
+ * AND segments_updated within the last 10 minutes. This avoids showing
+ * abandoned ingests (where the writer crashed without closing the flow)
+ * as perpetually "live".
+ */
+const isFlowGrowing = (flow) => {
+  const hasIngestingTag = flow.tags?.flow_status?.includes("ingesting") ?? false;
+  if (!hasIngestingTag) return false;
+  const segUpdated = flow.segments_updated;
+  if (!segUpdated) return false;
+  return Date.now() - new Date(segUpdated).getTime() < GROWING_STALE_MS;
+};
+
 /**
  * For each displayed source, fetch its video flow to get fps, duration,
- * and growing status. Growing status is read from the flow's tags
- * (not the source's — source tags are stale after recording stops).
+ * and growing status. Growing status requires both the "ingesting" tag
+ * and recent segment activity (within 10 minutes).
  *
  * On initial load, all sources are fetched once. Sources that are growing
  * are tracked by flow ID and re-polled every 5s until they close.
@@ -118,7 +134,7 @@ const useSourceFlowDetails = (displayedSources) => {
 
             const fr = flow.essence_parameters?.frame_rate;
             const fps = fr?.numerator ? fr.numerator / (fr.denominator || 1) : null;
-            const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
+            const isGrowing = isFlowGrowing(flow);
 
             let durationMs = null;
             const detailRes = await api.get(`/flows/${flow.id}?include_timerange=true`);
@@ -169,7 +185,7 @@ const useSourceFlowDetails = (displayedSources) => {
             const flow = res.data;
             if (!flow) return;
 
-            const isGrowing = flow.tags?.flow_status?.includes("ingesting") ?? false;
+            const isGrowing = isFlowGrowing(flow);
 
             let durationMs = null;
             const tr = flow.timerange;
