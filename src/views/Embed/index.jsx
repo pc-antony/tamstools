@@ -82,16 +82,19 @@ const formatDate = (dateStr) => {
 const GROWING_STALE_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Check if a flow is actively growing: must have flow_status "ingesting"
- * AND segments_updated within the last 10 minutes. This avoids showing
- * abandoned ingests (where the writer crashed without closing the flow)
- * as perpetually "live".
+ * Check if a flow is actively growing. A flow is growing if it has the
+ * "ingesting" tag AND either has no segments yet (brand new) or has
+ * segments_updated within the last 10 minutes. The staleness check
+ * avoids showing abandoned ingests as perpetually "live".
+ *
+ * A flow is definitively NOT growing if it has the "closed_complete" tag.
  */
 const isFlowGrowing = (flow) => {
+  if (flow.tags?.flow_status?.includes("closed_complete")) return false;
   const hasIngestingTag = flow.tags?.flow_status?.includes("ingesting") ?? false;
   if (!hasIngestingTag) return false;
   const segUpdated = flow.segments_updated;
-  if (!segUpdated) return false;
+  if (!segUpdated) return true; // Brand new flow, no segments yet
   return Date.now() - new Date(segUpdated).getTime() < GROWING_STALE_MS;
 };
 
