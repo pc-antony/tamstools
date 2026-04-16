@@ -37,6 +37,7 @@ const StoreManager = () => {
   const [formTokenUrl, setFormTokenUrl] = useState("");
   const [formClientId, setFormClientId] = useState("");
   const [formClientSecret, setFormClientSecret] = useState("");
+  const [formScope, setFormScope] = useState("");
   const [formCuttingRoomTamsId, setFormCuttingRoomTamsId] = useState("");
   const [testStatus, setTestStatus] = useState(null);
 
@@ -49,6 +50,7 @@ const StoreManager = () => {
     setFormTokenUrl("");
     setFormClientId("");
     setFormClientSecret("");
+    setFormScope("");
     setTestStatus(null);
     setEditingStore(null);
   };
@@ -68,6 +70,7 @@ const StoreManager = () => {
     setFormTokenUrl(store.tokenUrl || "");
     setFormClientId(store.clientId || "");
     setFormClientSecret(store.clientSecret || "");
+    setFormScope(store.scope || "");
     setTestStatus(null);
     setModalVisible(true);
   };
@@ -89,6 +92,7 @@ const StoreManager = () => {
         tokenUrl: formTokenUrl.trim(),
         clientId: formClientId.trim(),
         clientSecret: formClientSecret.trim(),
+        scope: formScope.trim() || null,
       };
     }
     return { ...base, token: null, tokenUrl: null, clientId: null, clientSecret: null };
@@ -110,13 +114,19 @@ const StoreManager = () => {
       return formToken.trim() || null;
     }
     if (formAuthType === "client_credentials") {
-      const response = await fetch(formTokenUrl.trim(), {
+      const parts = [
+        `grant_type=client_credentials`,
+        `client_id=${formClientId.trim()}`,
+        `client_secret=${encodeURIComponent(formClientSecret.trim())}`,
+      ];
+      if (formScope.trim()) parts.push(`scope=${formScope.trim()}`);
+      const response = await fetch("/__token_proxy", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${btoa(`${formClientId.trim()}:${formClientSecret.trim()}`)}`,
+          "X-Token-Url": formTokenUrl.trim(),
         },
-        body: "grant_type=client_credentials",
+        body: parts.join("&"),
       });
       if (!response.ok) throw new Error("Token request failed");
       const data = await response.json();
@@ -129,12 +139,15 @@ const StoreManager = () => {
     setTestStatus("loading");
     try {
       const endpoint = formEndpoint.trim().replace(/\/+$/, "");
-      const headers = { "Content-Type": "application/json" };
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Target-Url": `${endpoint}/sources?limit=1`,
+      };
       const token = await getTestToken();
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
-      const response = await fetch(`${endpoint}/sources?limit=1`, { headers });
+      const response = await fetch("/__api_proxy", { headers });
       setTestStatus(response.ok ? "success" : "error");
     } catch {
       setTestStatus("error");
@@ -364,6 +377,16 @@ const StoreManager = () => {
                             onChange={({ detail }) => setFormClientSecret(detail.value)}
                             placeholder="Client Secret"
                             type="password"
+                          />
+                        </FormField>
+                        <FormField
+                          label="Scope"
+                          description="The OAuth2 scope for the token request (e.g. api://app-id/.default)."
+                        >
+                          <Input
+                            value={formScope}
+                            onChange={({ detail }) => setFormScope(detail.value)}
+                            placeholder="api://app-id/.default"
                           />
                         </FormField>
                       </SpaceBetween>

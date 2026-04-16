@@ -5,7 +5,7 @@ import paginationFetcher from "@/utils/paginationFetcher";
 export const useSources = () => {
   const api = useApi();
   const { data, mutate, error, isLoading, isValidating } = useSWR(
-    api.endpoint ? [api.endpoint, "/sources?limit=300"] : null,
+    api.endpoint ? [api.endpoint, "/sources"] : null,
     ([, path]) => paginationFetcher(path, null, api),
     {
       refreshInterval: 5000,

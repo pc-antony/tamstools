@@ -29,7 +29,7 @@ const Header = () => {
       identity={{
         href: "#/",
         title: "TAMS Store Browser",
-        logo: { src: "/tamstool/cuttingroom-logo.svg" },
+        logo: { src: "/tamstool/avanade-logo.svg" },
       }}
       utilities={[
         ...(activeStore

@@ -30,7 +30,7 @@ export const useSegments = (flowId, timerange, maxResults = 3000) => {
       paginationFetcher(
         `${path}${
           timerange ? `?timerange=${timerange}` : ""
-        }&reverse_order=false&limit=300`,
+        }&reverse_order=false`,
         maxResults,
         api
       )
@@ -48,8 +48,8 @@ export const useSegments = (flowId, timerange, maxResults = 3000) => {
 export const useFlowsSegments = (flows, timerange, maxResults = 3000) => {
   const api = useApi();
   const params = timerange
-    ? `?timerange=${timerange}&reverse_order=false&limit=300`
-    : `?reverse_order=false&limit=300`;
+    ? `?timerange=${timerange}&reverse_order=false&`
+    : `?reverse_order=false&`;
 
   const { data, mutate, error, isLoading, isValidating } = useSWR(
     flows?.length > 0

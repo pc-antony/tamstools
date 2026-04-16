@@ -13,13 +13,9 @@ import { useNavigate } from "react-router-dom";
 const pageMarkdown = `
 **TAMS Store Browser** lets you explore [Time-Addressable Media Store](https://github.com/bbc/tams) endpoints directly from your browser -- no backend, no infrastructure, no sign-up required.
 
-[CuttingRoom](https://cuttingroom.com) believes in open standards and interoperability, and is hosting this tool to make it easy for anyone to explore TAMS.
-
-The source code is at [github.com/cuttingroom/tamstool](https://github.com/cuttingroom/tamstool) -- contributions, forks, and issues are welcome.
-
 ### Why this tool?
 
-This project is a fork of [AWS TAMS Tools](https://github.com/aws-samples/time-addressable-media-store-tools), an open-source project by **Amazon Web Services** (MIT-0 license). The AWS tool is great, but it is designed to be deployed as part of an AWS stack, which means you need your own infrastructure to run it. We wanted a version that **anyone can use immediately** -- hosted for free, no deployment, no AWS account, no setup. Just open the page, point it at a TAMS endpoint, and start browsing.
+This project is a fork of [AWS TAMS Tools](https://github.com/aws-samples/time-addressable-media-store-tools), an open-source project by **Amazon Web Services** (MIT-0 license) and which has been designed to be deployed as part of an AWS stack. This fork removes all AWS-specific code and dependencies, making it a lightweight, portable tool that can be used with any TAMS implementation.
 
 TAMS itself is a [BBC initiative](https://github.com/bbc/tams) for time-addressable media.
 
@@ -68,14 +64,7 @@ const Home = () => {
         </Box>
       </Container>
       <Box textAlign="center" color="text-body-secondary" fontSize="body-s">
-        Based on{" "}
-        <a
-          href="https://github.com/aws-samples/time-addressable-media-store-tools"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          AWS TAMS Tools
-        </a>{" "}
+        Modified from AWS TAMS Tools for Azure{" "}
         |{" "}
         <a
           href="https://github.com/bbc/tams"
@@ -87,11 +76,11 @@ const Home = () => {
         |{" "}
         Hosted by{" "}
         <a
-          href="https://cuttingroom.com"
+          href="https://www.avanade.com/en-gb"
           target="_blank"
           rel="noopener noreferrer"
         >
-          CuttingRoom
+          Avanade
         </a>
       </Box>
     </SpaceBetween>

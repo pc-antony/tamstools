@@ -179,7 +179,7 @@ const Flows = () => {
       expandableRows: showHierarchy && {
         getId: (item) => item.id,
         getParentId: (item) =>
-          item.collected_by ? item.collected_by[0] : null,
+          item.collected_by?.length ? item.collected_by[0] : null,
       },
       filtering: {
         empty: (

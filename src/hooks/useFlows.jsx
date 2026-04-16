@@ -22,7 +22,7 @@ const useFlowsQuery = (url) => {
   };
 };
 
-export const useFlows = () => useFlowsQuery("/flows?limit=300");
+export const useFlows = () => useFlowsQuery("/flows?");
 
 export const useFlowsBySource = (sourceId) =>
   useFlowsQuery(sourceId ? `/flows?source_id=${sourceId}` : null);

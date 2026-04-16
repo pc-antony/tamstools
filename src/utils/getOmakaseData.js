@@ -149,10 +149,12 @@ const getSegmentationTimerange = async (flows, api) => {
     end: earliestEndFlow.timerange.end,
   };
 
+  const windowTimerangeStr = toTimerangeString(windowTimerange);
+
   const windowSegments = await paginationFetcher(
     `/flows/${
       earliestEndFlow.id
-    }/segments?presigned=true&limit=300&timerange=${toTimerangeString(windowTimerange)}`, null, api
+    }/segments?presigned=true${windowTimerangeStr && windowTimerangeStr !== "_" ? `&timerange=${windowTimerangeStr}` : ""}`, null, api
   );
 
   if (windowSegments.length === 0) {
@@ -221,12 +223,13 @@ const getOmakaseData = async (api, { type, id, timerange }) => {
     fetchPromises.push(Promise.resolve(entry))
   );
   // Add promises for all remaining flow segment requests
+  const timerangeParam = parsedTimerange && parsedTimerange !== "_" ? `&timerange=${parsedTimerange}` : "";
   [flow.id, ...relatedFlows.map(({ id }) => id)]
     .filter((id) => !(id in segmentsCache))
     .forEach((id) =>
       fetchPromises.push(
         paginationFetcher(
-          `/flows/${id}/segments?presigned=true&limit=300&timerange=${parsedTimerange}`, null, api
+          `/flows/${id}/segments?presigned=true${timerangeParam}`, null, api
         ).then((result) => [id, result])
       )
     );
