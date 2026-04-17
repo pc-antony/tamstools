@@ -21,6 +21,8 @@ import { useCollection } from "@/hooks/useCollection";
 import { useSources } from "@/hooks/useSources";
 import usePreferencesStore from "@/stores/usePreferencesStore";
 import { PAGE_SIZE_PREFERENCE } from "@/constants";
+import Pagination from "@/components/Pagination";
+import CollectionPreferences from "@/components/CollectionPreferences";
 
 const columnDefinitions = [
   { id: "id", header: "Id", sortingField: "id", accessor: (item) => item.id },
@@ -38,6 +40,9 @@ const columnDefinitions = [
 
 const Sources = () => {
   const preferences = usePreferencesStore((state) => state.sourcesPreferences);
+  const setPreferences = usePreferencesStore(
+    (state) => state.setSourcesPreferences
+  );
   const showHierarchy = usePreferencesStore(
     (state) => state.sourcesShowHierarchy
   );
@@ -66,12 +71,11 @@ const Sources = () => {
       selection: {},
     });
 
-  const visibleIds = new Set(
-    preferences.contentDisplay
-      ?.filter((c) => c.visible)
-      .map((c) => c.id) ?? columnDefinitions.map((c) => c.id)
-  );
-  const visibleColumns = columnDefinitions.filter((c) => visibleIds.has(c.id));
+  const colMap = new Map(columnDefinitions.map((c) => [c.id, c]));
+  const visibleColumns = (preferences.contentDisplay ?? [])
+    .filter((c) => c.visible)
+    .map((c) => colMap.get(c.id))
+    .filter(Boolean);
 
   if (error) {
     return (
@@ -99,6 +103,12 @@ const Sources = () => {
             checked={showHierarchy}
             onChange={(_, data) => setShowHierarchy(data.checked)}
             label="Hierarchical View"
+          />
+          <Pagination {...paginationProps} />
+          <CollectionPreferences
+            preferences={preferences}
+            onConfirm={setPreferences}
+            columnDefinitions={columnDefinitions}
           />
         </div>
       </div>
@@ -172,29 +182,6 @@ const Sources = () => {
           ))}
         </TableBody>
       </Table>
-
-      {/* Pagination */}
-      {paginationProps.pagesCount > 1 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-          <Button
-            appearance="subtle"
-            disabled={paginationProps.currentPageIndex <= 1}
-            onClick={() => paginationProps.onChange(paginationProps.currentPageIndex - 1)}
-          >
-            Previous
-          </Button>
-          <Text>
-            Page {paginationProps.currentPageIndex} of {paginationProps.pagesCount}
-          </Text>
-          <Button
-            appearance="subtle"
-            disabled={paginationProps.currentPageIndex >= paginationProps.pagesCount}
-            onClick={() => paginationProps.onChange(paginationProps.currentPageIndex + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
