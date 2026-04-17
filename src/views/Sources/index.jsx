@@ -7,14 +7,9 @@ import {
   Switch,
   Text,
   Tooltip,
-  Table,
-  TableHeader,
-  TableRow,
-  TableHeaderCell,
-  TableBody,
-  TableCell,
 } from "@fluentui/react-components";
 import { CopyRegular, ChevronDownRegular, ChevronRightRegular } from "@fluentui/react-icons";
+import { useState } from "react";
 
 import { Link } from "react-router-dom";
 import { useCollection } from "@/hooks/useCollection";
@@ -23,9 +18,10 @@ import usePreferencesStore from "@/stores/usePreferencesStore";
 import { PAGE_SIZE_PREFERENCE } from "@/constants";
 import Pagination from "@/components/Pagination";
 import CollectionPreferences from "@/components/CollectionPreferences";
+import ResizableHeaderCell from "@/components/ResizableHeaderCell";
 
 const columnDefinitions = [
-  { id: "id", header: "Id", sortingField: "id", accessor: (item) => item.id },
+  { id: "id", header: "Id", sortingField: "id", accessor: (item) => item.id, defaultWidth: 340 },
   { id: "format", header: "Format", sortingField: "format", accessor: (item) => item.format },
   { id: "label", header: "Label", sortingField: "label", accessor: (item) => item.label },
   { id: "description", header: "Description", sortingField: "description", accessor: (item) => item.description },
@@ -42,6 +38,9 @@ const Sources = () => {
   const preferences = usePreferencesStore((state) => state.sourcesPreferences);
   const setPreferences = usePreferencesStore(
     (state) => state.setSourcesPreferences
+  );
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(columnDefinitions.map((c) => [c.id, c.defaultWidth ?? null]))
   );
   const showHierarchy = usePreferencesStore(
     (state) => state.sourcesShowHierarchy
@@ -122,28 +121,31 @@ const Sources = () => {
       />
 
       {/* Table */}
-      <Table size="small">
-        <TableHeader>
-          <TableRow>
-            {visibleColumns.map((col) => (
-              <TableHeaderCell
-                key={col.id}
-                style={{ cursor: "pointer" }}
-                onClick={() => collectionProps.onSortingChange(col)}
-              >
-                {col.header}
-                {collectionProps.sortingColumn?.sortingField === col.sortingField
-                  ? collectionProps.sortingDescending ? " ↓" : " ↑"
-                  : ""}
-              </TableHeaderCell>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              {visibleColumns.map((col) => (
+                <ResizableHeaderCell
+                  key={col.id}
+                  width={columnWidths[col.id]}
+                  onResize={(w) => setColumnWidths((prev) => ({ ...prev, [col.id]: w }))}
+                  style={{ cursor: "pointer", textAlign: "left", padding: "6px 8px", fontSize: 12, fontWeight: 600 }}
+                  onClick={() => collectionProps.onSortingChange(col)}
+                >
+                  {col.header}
+                  {collectionProps.sortingColumn?.sortingField === col.sortingField
+                    ? collectionProps.sortingDescending ? " ↓" : " ↑"
+                    : ""}
+                </ResizableHeaderCell>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
           {items.map((item) => (
-            <TableRow key={item.id}>
+            <tr key={item.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke2, #333)" }}>
               {visibleColumns.map((col, colIndex) => (
-                <TableCell key={col.id}>
+                <td key={col.id} style={{ padding: "4px 8px", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   <div style={{
                     display: "flex",
                     alignItems: "center",
@@ -176,12 +178,13 @@ const Sources = () => {
                       col.accessor(item)
                     )}
                   </div>
-                </TableCell>
+                </td>
               ))}
-            </TableRow>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

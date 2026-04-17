@@ -1,19 +1,15 @@
 import { PAGE_SIZE_PREFERENCE } from "@/constants";
+import { useState } from "react";
 import {
   MessageBar,
   MessageBarBody,
   Button,
+  Checkbox,
   Input,
   Spinner,
   Switch,
   Text,
   Tooltip,
-  Table,
-  TableHeader,
-  TableRow,
-  TableHeaderCell,
-  TableBody,
-  TableCell,
 } from "@fluentui/react-components";
 import { CopyRegular, ChevronDownRegular, ChevronRightRegular } from "@fluentui/react-icons";
 import { useFlows } from "@/hooks/useFlows";
@@ -23,9 +19,10 @@ import usePreferencesStore from "@/stores/usePreferencesStore";
 import FlowActionsButton from "@/components/FlowActionsButton";
 import Pagination from "@/components/Pagination";
 import CollectionPreferences from "@/components/CollectionPreferences";
+import ResizableHeaderCell from "@/components/ResizableHeaderCell";
 
 const columnDefinitions = [
-  { id: "id", header: "Id", sortingField: "id", accessor: (item) => item.id },
+  { id: "id", header: "Id", sortingField: "id", accessor: (item) => item.id, defaultWidth: 340 },
   { id: "label", header: "Label", sortingField: "label", accessor: (item) => item.label },
   { id: "description", header: "Description", sortingField: "description", accessor: (item) => item.description },
   { id: "format", header: "Format", sortingField: "format", accessor: (item) => item.format },
@@ -50,6 +47,9 @@ const Flows = () => {
   const preferences = usePreferencesStore((state) => state.flowsPreferences);
   const setPreferences = usePreferencesStore(
     (state) => state.setFlowsPreferences
+  );
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(columnDefinitions.map((c) => [c.id, c.defaultWidth ?? null]))
   );
   const showHierarchy = usePreferencesStore(
     (state) => state.flowsShowHierarchy
@@ -78,7 +78,34 @@ const Flows = () => {
       },
       selection: {},
     });
-  const { selectedItems } = collectionProps;
+  const { selectedItems, onSelectionChange } = collectionProps;
+
+  const allChecked = items.length > 0 && items.every((item) =>
+    selectedItems.some((s) => s.id === item.id)
+  );
+  const someChecked = !allChecked && items.some((item) =>
+    selectedItems.some((s) => s.id === item.id)
+  );
+
+  const toggleAll = () => {
+    if (allChecked) {
+      const pageIds = new Set(items.map((i) => i.id));
+      onSelectionChange(selectedItems.filter((s) => !pageIds.has(s.id)));
+    } else {
+      const existing = new Set(selectedItems.map((s) => s.id));
+      const toAdd = items.filter((i) => !existing.has(i.id));
+      onSelectionChange([...selectedItems, ...toAdd]);
+    }
+  };
+
+  const toggleRow = (item) => {
+    const exists = selectedItems.some((s) => s.id === item.id);
+    if (exists) {
+      onSelectionChange(selectedItems.filter((s) => s.id !== item.id));
+    } else {
+      onSelectionChange([...selectedItems, item]);
+    }
+  };
 
   const colMap = new Map(columnDefinitions.map((c) => [c.id, c]));
   const visibleColumns = (preferences.contentDisplay ?? [])
@@ -132,28 +159,43 @@ const Flows = () => {
       />
 
       {/* Table */}
-      <Table size="small">
-        <TableHeader>
-          <TableRow>
-            {visibleColumns.map((col) => (
-              <TableHeaderCell
-                key={col.id}
-                style={{ cursor: "pointer" }}
-                onClick={() => collectionProps.onSortingChange(col)}
-              >
-                {col.header}
-                {collectionProps.sortingColumn?.sortingField === col.sortingField
-                  ? collectionProps.sortingDescending ? " ↓" : " ↑"
-                  : ""}
-              </TableHeaderCell>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              <th style={{ width: 36, padding: "6px 4px" }}>
+                <Checkbox
+                  checked={allChecked ? true : someChecked ? "mixed" : false}
+                  onChange={toggleAll}
+                />
+              </th>
+              {visibleColumns.map((col) => (
+                <ResizableHeaderCell
+                  key={col.id}
+                  width={columnWidths[col.id]}
+                  onResize={(w) => setColumnWidths((prev) => ({ ...prev, [col.id]: w }))}
+                  style={{ cursor: "pointer", textAlign: "left", padding: "6px 8px", fontSize: 12, fontWeight: 600 }}
+                  onClick={() => collectionProps.onSortingChange(col)}
+                >
+                  {col.header}
+                  {collectionProps.sortingColumn?.sortingField === col.sortingField
+                    ? collectionProps.sortingDescending ? " ↓" : " ↑"
+                    : ""}
+                </ResizableHeaderCell>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
           {items.map((item) => (
-            <TableRow key={item.id}>
+            <tr key={item.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke2, #333)" }}>
+              <td style={{ padding: "4px 4px", width: 36 }}>
+                <Checkbox
+                  checked={selectedItems.some((s) => s.id === item.id)}
+                  onChange={() => toggleRow(item)}
+                />
+              </td>
               {visibleColumns.map((col, colIndex) => (
-                <TableCell key={col.id}>
+                <td key={col.id} style={{ padding: "4px 8px", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   <div style={{
                     display: "flex",
                     alignItems: "center",
@@ -186,12 +228,13 @@ const Flows = () => {
                       col.accessor(item)
                     )}
                   </div>
-                </TableCell>
+                </td>
               ))}
-            </TableRow>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
