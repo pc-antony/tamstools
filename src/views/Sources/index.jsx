@@ -142,46 +142,46 @@ const Sources = () => {
             </tr>
           </thead>
           <tbody>
-          {items.map((item) => (
-            <tr key={item.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke2, #333)" }}>
-              {visibleColumns.map((col, colIndex) => (
-                <td key={col.id} style={{ padding: "4px 8px", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    paddingLeft: colIndex === 0 && expandableProps ? expandableProps.getDepth(item) * 24 : 0,
-                  }}>
-                    {colIndex === 0 && expandableProps && expandableProps.isExpandable(item) ? (
-                      <Button
-                        appearance="transparent"
-                        icon={expandableProps.isExpanded(item) ? <ChevronDownRegular /> : <ChevronRightRegular />}
-                        size="small"
-                        onClick={() => expandableProps.toggle(item)}
-                        style={{ minWidth: "auto", padding: 0, marginRight: 4 }}
-                      />
-                    ) : colIndex === 0 && expandableProps ? (
-                      <span style={{ width: 28 }} />
-                    ) : null}
-                    {col.id === "id" ? (
-                      <>
-                        <Link to={`/sources/${item.id}`}>{item.id}</Link>
-                        <Tooltip content="Copy Id" relationship="label">
-                          <Button
-                            appearance="transparent"
-                            icon={<CopyRegular />}
-                            size="small"
-                            onClick={() => navigator.clipboard.writeText(item.id)}
-                          />
-                        </Tooltip>
-                      </>
-                    ) : (
-                      col.accessor(item)
-                    )}
-                  </div>
-                </td>
-              ))}
-            </tr>
-          ))}
+            {items.map((item) => (
+              <tr key={item.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke2, #333)" }}>
+                {visibleColumns.map((col, colIndex) => (
+                  <td key={col.id} style={{ padding: "4px 8px", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      paddingLeft: colIndex === 0 && expandableProps ? expandableProps.getDepth(item) * 24 : 0,
+                    }}>
+                      {colIndex === 0 && expandableProps && expandableProps.isExpandable(item) ? (
+                        <Button
+                          appearance="transparent"
+                          icon={expandableProps.isExpanded(item) ? <ChevronDownRegular /> : <ChevronRightRegular />}
+                          size="small"
+                          onClick={() => expandableProps.toggle(item)}
+                          style={{ minWidth: "auto", padding: 0, marginRight: 4 }}
+                        />
+                      ) : colIndex === 0 && expandableProps ? (
+                        <span style={{ width: 28 }} />
+                      ) : null}
+                      {col.id === "id" ? (
+                        <>
+                          <Link to={`/sources/${item.id}`}>{item.id}</Link>
+                          <Tooltip content="Copy Id" relationship="label">
+                            <Button
+                              appearance="transparent"
+                              icon={<CopyRegular />}
+                              size="small"
+                              onClick={() => navigator.clipboard.writeText(item.id)}
+                            />
+                          </Tooltip>
+                        </>
+                      ) : (
+                        col.accessor(item)
+                      )}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
