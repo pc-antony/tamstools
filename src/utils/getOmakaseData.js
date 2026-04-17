@@ -5,7 +5,7 @@ import {
 
 import paginationFetcher from "@/utils/paginationFetcher";
 
-const DEFAULT_SEGMENTATION_DURATION = 300;
+const DEFAULT_SEGMENTATION_DURATION = Number(import.meta.env.VITE_SEGMENTATION_DURATION) || 300;
 const NANOS_PER_SECOND = 1_000_000_000n;
 
 const shouldExcludeFlow = (flow) =>
@@ -101,29 +101,65 @@ const parseAndFilterFlows = (flows) => {
   const result = [];
 
   for (const flow of flows) {
-    // If the flow does not have a container value then it cannot have segments registered
-    if (!flow.container) continue;
+    // Multi-flows can carry mux segments without a container on the flow itself
+    if (!flow.container && flow.format !== "urn:x-nmos:format:multi") continue;
 
     try {
       const parsedTimerange = parseTimerange(flow.timerange);
       if (
         parsedTimerange.start !== undefined &&
-        parsedTimerange.end !== undefined
+        parsedTimerange.end !== undefined &&
+        parsedTimerange.start !== null &&
+        parsedTimerange.end !== null
       ) {
         result.push({ ...flow, timerange: parsedTimerange });
+        continue;
       }
-    } catch (error) {
-      // Skip flows with parsing errors
+    } catch {
+      // Flow has no parseable timerange
     }
+
+    // Include flow with null bounds — timerange will be derived from segments
+    result.push({ ...flow, timerange: { start: null, end: null } });
   }
 
   return result;
 };
 
+const deriveFlowTimeranges = async (flows, api) => {
+  const results = [];
+
+  for (const flow of flows) {
+    if (flow.timerange.start !== null && flow.timerange.end !== null) {
+      results.push(flow);
+      continue;
+    }
+
+    const segments = await paginationFetcher(
+      `/flows/${flow.id}/segments`,
+      null,
+      api
+    );
+
+    if (segments.length === 0) continue;
+
+    const start = parseTimerange(segments[0].timerange).start;
+    const end = parseTimerange(
+      segments[segments.length - 1].timerange
+    ).end;
+
+    if (start !== null && end !== null) {
+      results.push({ ...flow, timerange: { start, end } });
+    }
+  }
+
+  return results;
+};
+
 const getSegmentationTimerange = async (flows, api) => {
-  // Filter for video flows, Video must take priority if any are present
+  // Filter for video or multi flows, these take priority if any are present
   const videoFlows = flows.filter(
-    ({ format }) => format === "urn:x-nmos:format:video"
+    ({ format }) => format === "urn:x-nmos:format:video" || format === "urn:x-nmos:format:multi"
   );
 
   // Determine which flows to use for calculation
@@ -196,7 +232,8 @@ const getOmakaseData = async (api, { type, id, timerange }) => {
     };
   }
 
-  const timerangeValidFlows = parseAndFilterFlows([flow, ...relatedFlows]);
+  const parsedFlows = parseAndFilterFlows([flow, ...relatedFlows]);
+  const timerangeValidFlows = await deriveFlowTimeranges(parsedFlows, api);
 
   const maxTimerange = getMaxTimerange(timerangeValidFlows);
   const parsedMaxTimerange = toTimerangeString(maxTimerange);
@@ -234,21 +271,6 @@ const getOmakaseData = async (api, { type, id, timerange }) => {
     );
 
   const flowSegments = Object.fromEntries(await Promise.all(fetchPromises));
-
-  // For mux (multi) flows, segments live on the parent flow rather than on
-  // individual child flows. The player library looks up segments by child flow
-  // ID, so copy the parent's mux segments to any child that has none.
-  if (
-    flow.format === "urn:x-nmos:format:multi" &&
-    Array.isArray(flow.flow_collection) &&
-    flowSegments[flow.id]?.length
-  ) {
-    for (const { id } of flow.flow_collection) {
-      if (!flowSegments[id]?.length) {
-        flowSegments[id] = flowSegments[flow.id];
-      }
-    }
-  }
 
   return {
     flow,

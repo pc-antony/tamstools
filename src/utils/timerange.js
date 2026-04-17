@@ -1,9 +1,10 @@
 import { DateTime } from "luxon";
 
 const NANOS_PER_SECOND = 1_000_000_000n;
-// Regex expression used to valdiate and parse the timerange string into it's components
+// Regex expression used to validate and parse the timerange string into its components
+// Accepts leading zeros in nanoseconds for tolerance of non-spec-compliant stores
 const TIMERANGE_REGEX =
-  /^(?<startInclusive>\[|\()?(?:(?<startSeconds>-?(?:0|[1-9][0-9]*)):(?<startNanos>0|[1-9][0-9]{0,8}))?(?:_(?:(?<endSeconds>-?(?:0|[1-9][0-9]*)):(?<endNanos>0|[1-9][0-9]{0,8}))?)?(?<endInclusive>\]|\))?$/;
+  /^(?<startInclusive>\[|\()?(?:(?<startSeconds>-?(?:0|[1-9][0-9]*)):(?<startNanos>[0-9]{1,9}))?(?:_(?:(?<endSeconds>-?(?:0|[1-9][0-9]*)):(?<endNanos>[0-9]{1,9}))?)?(?<endInclusive>\]|\))?$/;
 const INFINITE_PATTERNS = new Set([
   "_",
   "(_)",

@@ -525,6 +525,34 @@ const OmakasePlayerTamsComponent = React.memo(
   }: OmakasePlayerTamsComponentProps) => {
     const config = resolveDisplayConfig(displayConfig);
 
+    // Detect mux flow: multi-format flow with segments on the parent and
+    // unpopulated child flows. Build a single HLS playlist by presenting the
+    // mux segments as a video flow using the video child's essence_parameters.
+    const muxPlayerProps = useMemo(() => {
+      if (flow.format !== "urn:x-nmos:format:multi") return null;
+
+      const parentSegments = flowsSegments.get(flow.id) ?? [];
+      if (parentSegments.length === 0) return null;
+
+      const childrenHaveSegments = childFlows?.some(
+        (cf) => (flowsSegments.get(cf.id) ?? []).length > 0
+      );
+      if (childrenHaveSegments) return null;
+
+      const videoChild = childFlows?.find(
+        (cf) => cf.format === "urn:x-nmos:format:video"
+      );
+      if (!videoChild) return null;
+
+      return {
+        flow: {
+          ...videoChild,
+          id: flow.id,
+        } as Flow,
+        childFlows: [] as Flow[],
+      };
+    }, [flow, childFlows, flowsSegments]);
+
     const timelineBuilderFlows = useMemo(() => {
       const flows = childFlows ? [...childFlows] : [];
       if ((flowsSegments.get(flow.id) ?? []).length > 0) {
@@ -721,8 +749,8 @@ const OmakasePlayerTamsComponent = React.memo(
           <div>
             <div className="player-wrapper" style={{ marginBottom: 0 }}>
               <OmakaseTamsPlayerComponent
-                flow={flow}
-                childFlows={childFlows}
+                flow={muxPlayerProps?.flow ?? flow}
+                childFlows={muxPlayerProps?.childFlows ?? childFlows}
                 flowsSegments={flowsSegments}
                 onVideoLoadedCallback={(omakasePlayer, _, videoInfo) => {
                   setOmakasePlayer((prev) => prev ?? omakasePlayer);
