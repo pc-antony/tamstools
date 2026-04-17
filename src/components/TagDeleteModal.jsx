@@ -1,12 +1,15 @@
 import { useState } from "react";
 import {
-  Box,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
   Checkbox,
-  Modal,
-  SpaceBetween,
-  TextContent,
-} from "@cloudscape-design/components";
+  Text,
+} from "@fluentui/react-components";
 import { useDelete } from "@/hooks/useTags";
 import { useTagPropagation } from "@/hooks/useTagPropagation";
 
@@ -38,39 +41,37 @@ const TagDeleteModal = ({
   };
 
   return (
-    <Modal
-      onDismiss={handleDismiss}
-      visible={modalVisible}
-      header="Delete tag"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button variant="link" disabled={isLoading} onClick={handleDismiss}>
+    <Dialog open={modalVisible} onOpenChange={(_, data) => { if (!data.open) handleDismiss(); }}>
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>Delete tag</DialogTitle>
+          <DialogContent>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Text>
+                Are you sure you wish to delete the {tagName} tag?
+              </Text>
+              <Checkbox
+                checked={propagate}
+                onChange={(e, data) => setPropagate(data.checked)}
+                label="Propagate"
+              />
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button appearance="secondary" disabled={isLoading} onClick={handleDismiss}>
               No
             </Button>
             <Button
-              variant="primary"
-              loading={isLoading}
+              appearance="primary"
+              disabled={isLoading}
               onClick={handleConfirm}
             >
-              Yes
+              {isLoading ? "Deleting..." : "Yes"}
             </Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <SpaceBetween size="xs">
-        <TextContent>
-          Are you sure you wish to delete the {tagName} tag?
-        </TextContent>
-        <Checkbox
-          checked={propagate}
-          onChange={({ detail }) => setPropagate(detail.checked)}
-        >
-          Propagate
-        </Checkbox>
-      </SpaceBetween>
-    </Modal>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
   );
 };
 

@@ -1,4 +1,6 @@
 import { HashRouter, Route, Routes } from "react-router-dom";
+import { useState } from "react";
+import { FluentProvider, webDarkTheme } from "@fluentui/react-components";
 
 import Diagram from "@/views/Diagram";
 import Embed from "@/views/Embed";
@@ -13,26 +15,30 @@ import Sources from "@/views/Sources";
 import StoreManager from "@/views/StoreManager";
 
 const App = () => {
+  const [theme, setTheme] = useState(webDarkTheme);
+
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/embed" element={<Embed />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="stores" element={<StoreManager />} />
-          <Route path="sources">
-            <Route index element={<Sources />} />
-            <Route path=":sourceId" element={<Source />} />
+    <FluentProvider theme={theme}>
+      <HashRouter>
+        <Routes>
+          <Route path="/embed" element={<Embed />} />
+          <Route path="/" element={<Layout setTheme={setTheme} />}>
+            <Route index element={<Home />} />
+            <Route path="stores" element={<StoreManager />} />
+            <Route path="sources">
+              <Route index element={<Sources />} />
+              <Route path=":sourceId" element={<Source />} />
+            </Route>
+            <Route path="flows">
+              <Route index element={<Flows />} />
+              <Route path=":flowId" element={<Flow />} />
+            </Route>
+            <Route path="diagram/:type/:id" element={<Diagram />} />
+            <Route path="player/:type/:id" element={<OmakaseHlsPlayer />} />
           </Route>
-          <Route path="flows">
-            <Route index element={<Flows />} />
-            <Route path=":flowId" element={<Flow />} />
-          </Route>
-          <Route path="diagram/:type/:id" element={<Diagram />} />
-          <Route path="player/:type/:id" element={<OmakaseHlsPlayer />} />
-        </Route>
-      </Routes>
-    </HashRouter>
+        </Routes>
+      </HashRouter>
+    </FluentProvider>
   );
 };
 

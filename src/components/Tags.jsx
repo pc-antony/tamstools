@@ -1,11 +1,16 @@
 import {
   Button,
   Input,
-  SpaceBetween,
+  Text,
   Table,
-  TextContent,
-} from "@cloudscape-design/components";
-import { useCollection } from "@cloudscape-design/collection-hooks";
+  TableHeader,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
+  TableCell,
+} from "@fluentui/react-components";
+import { DeleteRegular, AddRegular } from "@fluentui/react-icons";
+import { useCollection } from "@/hooks/useCollection";
 import { useUpdate } from "@/hooks/useTags";
 import TagAddModal from "./TagAddModal";
 import TagDeleteModal from "./TagDeleteModal";
@@ -16,6 +21,8 @@ const Tags = ({ entityType, entity }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [actionId, setActionId] = useState("");
   const [tagName, setTagName] = useState("");
+  const [editingKey, setEditingKey] = useState(null);
+  const [editValue, setEditValue] = useState("");
 
   const handleAdd = () => {
     setActionId("add");
@@ -28,81 +35,106 @@ const Tags = ({ entityType, entity }) => {
     setModalVisible(true);
   };
 
-  const columnDefinitions = [
-    {
-      id: "key",
-      header: "Key",
-      cell: (item) => item.key,
-      isRowHeader: true,
-      sortingField: "key",
-    },
-    {
-      id: "value",
-      header: "Value",
-      cell: (item) => item.value,
-      sortingField: "value",
-      editConfig: {
-        editingCell: (item, { currentValue, setValue }) => {
-          return (
-            <Input
-              autoFocus
-              value={currentValue ?? item.value}
-              onChange={({ detail }) => setValue(detail.value)}
-            />
-          );
-        },
-      },
-    },
-    {
-      id: "delete",
-      cell: (item) => (
-        <Button
-          iconName="remove"
-          variant="icon"
-          onClick={() => handleDelete(item.key)}
-        />
-      ),
-      width: 32,
-    },
-  ];
+  const handleEditStart = (key, value) => {
+    setEditingKey(key);
+    setEditValue(value);
+  };
 
-  const { items, collectionProps } = useCollection(
-    entity.tags
-      ? Object.entries(entity.tags).map(([key, value]) => ({
-          key,
-          value: [value].flat().join(","),
-        }))
-      : [],
-    { sorting: {} },
-  );
+  const handleEditSave = async (key) => {
+    await update({
+      name: key,
+      value: editValue.includes(",")
+        ? editValue.split(",").map((s) => s.trim())
+        : editValue,
+    });
+    setEditingKey(null);
+  };
+
+  const tagItems = entity.tags
+    ? Object.entries(entity.tags).map(([key, value]) => ({
+      key,
+      value: [value].flat().join(","),
+    }))
+    : [];
+
+  const { items, collectionProps } = useCollection(tagItems, { sorting: {} });
 
   return (
     <>
-      <SpaceBetween size="xs">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {entity.tags ? (
-          <Table
-            {...collectionProps}
-            trackBy="key"
-            variant="borderless"
-            columnDefinitions={columnDefinitions}
-            contentDensity="compact"
-            items={items}
-            submitEdit={async (item, _, newValue) => {
-              await update({
-                name: item.key,
-                value: newValue.includes(",")
-                  ? newValue.split(",").map((s) => s.trim())
-                  : newValue,
-              });
-            }}
-          />
+          <Table size="small">
+            <TableHeader>
+              <TableRow>
+                <TableHeaderCell
+                  style={{ cursor: "pointer" }}
+                  onClick={() =>
+                    collectionProps.onSortingChange({ sortingField: "key" })
+                  }
+                >
+                  Key
+                </TableHeaderCell>
+                <TableHeaderCell
+                  style={{ cursor: "pointer" }}
+                  onClick={() =>
+                    collectionProps.onSortingChange({ sortingField: "value" })
+                  }
+                >
+                  Value
+                </TableHeaderCell>
+                <TableHeaderCell style={{ width: 40 }} />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.key}>
+                  <TableCell>{item.key}</TableCell>
+                  <TableCell>
+                    {editingKey === item.key ? (
+                      <Input
+                        size="small"
+                        value={editValue}
+                        onChange={(e, data) => setEditValue(data.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleEditSave(item.key);
+                          if (e.key === "Escape") setEditingKey(null);
+                        }}
+                        onBlur={() => handleEditSave(item.key)}
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        onClick={() => handleEditStart(item.key, item.value)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {item.value}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      appearance="transparent"
+                      icon={<DeleteRegular />}
+                      size="small"
+                      onClick={() => handleDelete(item.key)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         ) : (
-          <TextContent>No tags</TextContent>
+          <Text>No tags</Text>
         )}
-        <Button iconName="add-plus" variant="normal" onClick={handleAdd}>
-          Add Tag
-        </Button>
-      </SpaceBetween>
+        <div>
+          <Button
+            icon={<AddRegular />}
+            onClick={handleAdd}
+          >
+            Add Tag
+          </Button>
+        </div>
+      </div>
       {
         {
           add: (

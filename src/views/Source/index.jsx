@@ -1,12 +1,13 @@
 import {
-  Alert,
-  Box,
-  Header,
-  SpaceBetween,
+  MessageBar,
+  MessageBarBody,
   Spinner,
-  Tabs,
-} from "@cloudscape-design/components";
+  Text,
+  TabList,
+  Tab,
+} from "@fluentui/react-components";
 import { useParams } from "react-router-dom";
+import { useState } from "react";
 
 import CollectedBy from "@/components/CollectedBy";
 import Collection from "@/components/Collection";
@@ -19,67 +20,64 @@ import { useSource } from "@/hooks/useSources";
 const Source = () => {
   const { sourceId } = useParams();
   const { source, isLoading: loadingSource, error } = useSource(sourceId);
+  const [activeTab, setActiveTab] = useState("tags");
 
   if (error) {
     return (
-      <Alert type="error" header="Could not connect to TAMS store">
-        Failed to load source from the active store. Check that the endpoint URL is correct and the store is reachable.
-        <Box margin={{ top: "xs" }} color="text-body-secondary" fontSize="body-s">
-          {error.message}
-        </Box>
-      </Alert>
+      <MessageBar intent="error">
+        <MessageBarBody>
+          <Text weight="semibold">Could not connect to TAMS store</Text>
+          <br />
+          Failed to load source from the active store. Check that the endpoint URL is correct and the store is reachable.
+          <br />
+          <Text size={200}>{error.message}</Text>
+        </MessageBarBody>
+      </MessageBar>
     );
   }
 
+  const tabContent = {
+    tags: source ? <Tags entityType="sources" entity={source} /> : null,
+    source_collection: (
+      <Collection
+        entityType="sources"
+        collection={source?.source_collection}
+      />
+    ),
+    collected_by: (
+      <CollectedBy
+        entityType="sources"
+        collectedBy={source?.collected_by}
+      />
+    ),
+    flows: <FlowsTab sourceId={sourceId} />,
+  };
+
   return !loadingSource ? (
     source ? (
-      <SpaceBetween size="l">
-        <Header variant="h2">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <Text as="h2" size={500} weight="semibold">
           <EntityHeader type="Source" entity={source} />
-        </Header>
+        </Text>
         <EntityDetails entityType="sources" entity={source} />
-        <Tabs
-          tabs={[
-            {
-              label: "Tags",
-              id: "tags",
-              content: <Tags entityType="sources" entity={source} />,
-            },
-            {
-              label: "Source collections",
-              id: "source_collection",
-              content: (
-                <Collection
-                  entityType="sources"
-                  collection={source.source_collection}
-                />
-              ),
-            },
-            {
-              label: "Collected by",
-              id: "collected_by",
-              content: (
-                <CollectedBy
-                  entityType="sources"
-                  collectedBy={source.collected_by}
-                />
-              ),
-            },
-            {
-              label: "Flows",
-              id: "flows",
-              content: <FlowsTab sourceId={sourceId} />,
-            },
-          ]}
-        />
-      </SpaceBetween>
+        <TabList
+          selectedValue={activeTab}
+          onTabSelect={(_, data) => setActiveTab(data.value)}
+        >
+          <Tab value="tags">Tags</Tab>
+          <Tab value="source_collection">Source collections</Tab>
+          <Tab value="collected_by">Collected by</Tab>
+          <Tab value="flows">Flows</Tab>
+        </TabList>
+        <div>{tabContent[activeTab]}</div>
+      </div>
     ) : (
       `No source found with the id ${sourceId}`
     )
   ) : (
-    <Box textAlign="center">
+    <div style={{ textAlign: "center" }}>
       <Spinner />
-    </Box>
+    </div>
   );
 };
 

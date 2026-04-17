@@ -1,11 +1,15 @@
 import {
-  Alert,
-  Box,
+  MessageBar,
+  MessageBarBody,
   Button,
-  SpaceBetween,
   Spinner,
-  TextContent,
-} from "@cloudscape-design/components";
+  Text,
+} from "@fluentui/react-components";
+import {
+  ZoomInRegular,
+  ZoomOutRegular,
+  ZoomFitRegular,
+} from "@fluentui/react-icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRef, useState } from "react";
 
@@ -52,40 +56,43 @@ const Diagram = () => {
 
   if (error) {
     return (
-      <Alert type="error" header="Could not connect to TAMS store">
-        Failed to load diagram data from the active store. Check that the endpoint URL is correct and the store is reachable.
-        <Box margin={{ top: "xs" }} color="text-body-secondary" fontSize="body-s">
-          {error.message}
-        </Box>
-      </Alert>
+      <MessageBar intent="error">
+        <MessageBarBody>
+          <Text weight="semibold">Could not connect to TAMS store</Text>
+          <br />
+          Failed to load diagram data from the active store. Check that the endpoint URL is correct and the store is reachable.
+          <br />
+          <Text size={200}>{error.message}</Text>
+        </MessageBarBody>
+      </MessageBar>
     );
   }
 
   return (
-    <SpaceBetween size="xs">
-      <Box>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div>
         {elements.length > 0 ? (
-          <SpaceBetween size="xs">
-            <SpaceBetween direction="horizontal" size="xs" alignItems="center">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Button
-                iconName="zoom-in"
-                variant="inline-icon"
-                ariaLabel="zoom in"
+                appearance="transparent"
+                icon={<ZoomInRegular />}
+                aria-label="zoom in"
                 onClick={() => handleZoom("in")}
               />
               <Button
-                iconName="zoom-out"
-                variant="inline-icon"
-                ariaLabel="zoom out"
+                appearance="transparent"
+                icon={<ZoomOutRegular />}
+                aria-label="zoom out"
                 onClick={() => handleZoom("out")}
               />
               <Button
-                iconName="zoom-to-fit"
-                variant="inline-icon"
-                ariaLabel="zoom to fit"
+                appearance="transparent"
+                icon={<ZoomFitRegular />}
+                aria-label="zoom to fit"
                 onClick={() => cyRef.current?.fit()}
               />
-            </SpaceBetween>
+            </div>
             <CytoscapeComponent
               elements={elements}
               style={{
@@ -106,19 +113,19 @@ const Diagram = () => {
                 });
               }}
             />
-            <TextContent>
-              <small>(Double-click on an entity to view details)</small>
-            </TextContent>
+            <Text size={200}>
+              (Double-click on an entity to view details)
+            </Text>
             <hr />
             <Legend />
-          </SpaceBetween>
+          </div>
         ) : (
-          <Box textAlign="center">
+          <div style={{ textAlign: "center" }}>
             <Spinner size="large" />
-          </Box>
+          </div>
         )}
-      </Box>
-    </SpaceBetween>
+      </div>
+    </div>
   );
 };
 

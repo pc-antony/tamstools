@@ -19,7 +19,7 @@ applyTo: "**"
 
 ## Import Order
 1. React / React hooks
-2. Third-party UI libraries (Cloudscape Design)
+2. Third-party UI libraries (Fluent UI)
 3. Third-party utilities (react-router-dom, luxon, etc.)
 4. Local hooks (`@/hooks/`)
 5. Local stores (`@/stores/`)
@@ -35,7 +35,7 @@ applyTo: "**"
 - Use named exports for hooks that expose multiple functions (e.g., `export const useFlows`, `export const useFlow`)
 
 ## Styling
-- Use Cloudscape Design system components and tokens as the primary styling approach
+- Use Fluent UI (`@fluentui/react-components`) components and tokens as the primary styling approach
 - Plain CSS files for targeted overrides only — no CSS Modules or styled-components
 - Import CSS files last in the import block
 - Use inline styles sparingly, only for dynamic/interactive state (e.g., `cursor: "pointer"`)

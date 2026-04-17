@@ -1,38 +1,46 @@
 import { useState } from "react";
-import { ButtonDropdown } from "@cloudscape-design/components";
+import {
+  Menu,
+  MenuTrigger,
+  MenuPopover,
+  MenuList,
+  MenuItem,
+  Button,
+} from "@fluentui/react-components";
 import FlowActionsModal from "@/components/FlowActionsModal";
 
 const FlowActionsButton = ({ selectedItems }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [actionId, setActionId] = useState("");
 
-  const handleOnClick = ({ detail }) => {
-    setActionId(detail.id);
+  const handleOnClick = (id) => {
+    setActionId(id);
     setModalVisible(true);
   };
 
-  const items = [
-    {
-      text: "Delete",
-      id: "delete",
-      disabled: !(selectedItems.length > 0),
-    },
-    {
-      text: "Timerange delete",
-      id: "timerange",
-      disabled: !(selectedItems.length > 0),
-    },
-  ];
-
   return (
     <>
-      <ButtonDropdown
-        onItemClick={handleOnClick}
-        disabled={selectedItems.length === 0}
-        items={items}
-      >
-        Actions
-      </ButtonDropdown>
+      <Menu>
+        <MenuTrigger>
+          <Button disabled={selectedItems.length === 0}>Actions</Button>
+        </MenuTrigger>
+        <MenuPopover>
+          <MenuList>
+            <MenuItem
+              disabled={selectedItems.length === 0}
+              onClick={() => handleOnClick("delete")}
+            >
+              Delete
+            </MenuItem>
+            <MenuItem
+              disabled={selectedItems.length === 0}
+              onClick={() => handleOnClick("timerange")}
+            >
+              Timerange delete
+            </MenuItem>
+          </MenuList>
+        </MenuPopover>
+      </Menu>
       <FlowActionsModal
         selectedItems={selectedItems}
         actionId={actionId}

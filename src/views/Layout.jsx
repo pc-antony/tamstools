@@ -1,10 +1,14 @@
 import {
-  AppLayout,
-  BreadcrumbGroup,
-  ContentLayout,
-  Flashbar,
-  SideNavigation,
-} from "@cloudscape-design/components";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbButton,
+  MessageBar,
+  MessageBarBody,
+  MessageBarActions,
+  Button,
+  tokens,
+} from "@fluentui/react-components";
+import { DismissRegular, NavigationRegular } from "@fluentui/react-icons";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import Header from "@/components/Header";
@@ -12,17 +16,12 @@ import { useState } from "react";
 import useAlertsStore from "@/stores/useAlertsStore";
 import useStoreManager from "@/stores/useStoreManager";
 
-const Layout = () => {
+const Layout = ({ setTheme }) => {
   const [navigationOpen, setNavigationOpen] = useState(true);
   const alertItems = useAlertsStore((state) => state.alertItems);
   const activeStoreId = useStoreManager((s) => s.activeStoreId);
   const navigate = useNavigate();
   const { pathname } = useLocation();
-
-  const followLink = (e) => {
-    e.preventDefault();
-    navigate(e.detail.href);
-  };
 
   const breadCrumbs = () => {
     let breadCrumbPath = pathname;
@@ -57,41 +56,126 @@ const Layout = () => {
 
   const activeStore = useStoreManager((s) => s.getActiveStore());
 
-  const navHeader = {
-    text: activeStore ? activeStore.name : "No store selected",
-    href: "/stores",
-  };
-
   const navItems = [
-    { type: "link", text: "Sources", href: "/sources", disabled: !activeStore },
-    { type: "link", text: "Flows", href: "/flows", disabled: !activeStore },
-    { type: "divider" },
-    { type: "link", text: "Manage Stores", href: "/stores" },
+    { text: "Sources", href: "/sources", disabled: !activeStore },
+    { text: "Flows", href: "/flows", disabled: !activeStore },
+    { text: "Manage Stores", href: "/stores" },
   ];
 
   return (
-    <>
-      <Header />
-      <AppLayout
-        notifications={<Flashbar items={alertItems} stackItems />}
-        breadcrumbs={
-          <BreadcrumbGroup onFollow={followLink} items={breadCrumbs()} />
-        }
-        navigationOpen={navigationOpen}
-        onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
-        navigation={
-          <SideNavigation header={navHeader} onFollow={followLink} items={navItems} />
-        }
-        toolsHide
-        content={
-          <ContentLayout disableOverlap>
-            <div key={activeStoreId}>
-              <Outlet />
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      <Header setTheme={setTheme} />
+
+      {/* Alerts / Notifications */}
+      {alertItems.length > 0 && (
+        <div style={{ padding: "8px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+          {alertItems.map((item) => (
+            <MessageBar
+              key={item.id}
+              intent={item.type === "error" ? "error" : "success"}
+            >
+              <MessageBarBody>{item.content}</MessageBarBody>
+              {item.dismissible && (
+                <MessageBarActions>
+                  <Button
+                    appearance="transparent"
+                    icon={<DismissRegular />}
+                    size="small"
+                    onClick={item.onDismiss}
+                  />
+                </MessageBarActions>
+              )}
+            </MessageBar>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* Side Navigation */}
+        {navigationOpen && (
+          <nav
+            style={{
+              width: 240,
+              borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
+              padding: "12px 0",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              flexShrink: 0,
+              overflow: "auto",
+            }}
+          >
+            <div
+              style={{
+                padding: "8px 16px",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+              onClick={() => navigate("/stores")}
+            >
+              {activeStore ? activeStore.name : "No store selected"}
             </div>
-          </ContentLayout>
-        }
-      />
-    </>
+            <div
+              style={{
+                height: 1,
+                background: tokens.colorNeutralStroke1,
+                margin: "8px 16px",
+              }}
+            />
+            {navItems.map((item) => (
+              <div
+                key={item.href}
+                onClick={() => !item.disabled && navigate(item.href)}
+                style={{
+                  padding: "8px 16px",
+                  cursor: item.disabled ? "default" : "pointer",
+                  opacity: item.disabled ? 0.5 : 1,
+                  backgroundColor:
+                    pathname.startsWith(item.href) && item.href !== "/"
+                      ? tokens.colorNeutralBackground1Selected
+                      : "transparent",
+                  borderRadius: 4,
+                  margin: "0 8px",
+                  fontSize: 14,
+                }}
+              >
+                {item.text}
+              </div>
+            ))}
+          </nav>
+        )}
+
+        {/* Main Content */}
+        <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
+          {/* Breadcrumbs */}
+          <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <Button
+              appearance="subtle"
+              icon={<NavigationRegular />}
+              size="small"
+              onClick={() => setNavigationOpen((o) => !o)}
+            />
+            <Breadcrumb>
+              {breadCrumbs().map((crumb, i, arr) => (
+                <BreadcrumbItem key={crumb.href}>
+                  <BreadcrumbButton
+                    current={i === arr.length - 1}
+                    onClick={() => navigate(crumb.href)}
+                  >
+                    {crumb.text}
+                  </BreadcrumbButton>
+                </BreadcrumbItem>
+              ))}
+            </Breadcrumb>
+          </div>
+
+          <div key={activeStoreId}>
+            <Outlet />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

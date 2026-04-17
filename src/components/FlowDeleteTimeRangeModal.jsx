@@ -1,12 +1,15 @@
 import { useState } from "react";
 import {
-  Box,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
-  FormField,
   Input,
-  Modal,
-  SpaceBetween,
-} from "@cloudscape-design/components";
+  Field,
+} from "@fluentui/react-components";
 import useAlertsStore from "@/stores/useAlertsStore";
 import { useDeleteTimerange } from "@/hooks/useFlows";
 
@@ -46,43 +49,40 @@ const FlowDeleteTimeRangeModal = ({
   };
 
   return (
-    <Modal
-      onDismiss={handleDismiss}
-      visible={modalVisible}
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
+    <Dialog open={modalVisible} onOpenChange={(_, data) => { if (!data.open) handleDismiss(); }}>
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>Confirmation</DialogTitle>
+          <DialogContent>
+            <Field
+              label="Timerange"
+              hint="Provide a timerange for the segments to be deleted."
+            >
+              <Input
+                value={timerange}
+                onChange={(e, data) => setTimerange(data.value)}
+              />
+            </Field>
+          </DialogContent>
+          <DialogActions>
             <Button
-              variant="link"
+              appearance="secondary"
               disabled={isDeletingTimerange}
               onClick={handleDismiss}
             >
               Cancel
             </Button>
             <Button
-              variant="primary"
-              loading={isDeletingTimerange}
+              appearance="primary"
+              disabled={isDeletingTimerange}
               onClick={deleteTimerange}
             >
-              Delete
+              {isDeletingTimerange ? "Deleting..." : "Delete"}
             </Button>
-          </SpaceBetween>
-        </Box>
-      }
-      header="Confirmation"
-    >
-      <FormField
-        description="Provide a timerange for the segments to be deleted."
-        label="Timerange"
-      >
-        <Input
-          value={timerange}
-          onChange={({ detail }) => {
-            setTimerange(detail.value);
-          }}
-        />
-      </FormField>
-    </Modal>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
   );
 };
 

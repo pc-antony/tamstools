@@ -1,5 +1,4 @@
-[class*="awsui_top-navigation"] [class*="awsui_title"] {
-  white-space: nowrap !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
+.header-bar {
+  border-bottom: 1px solid var(--colorNeutralStroke1);
+  padding: 0 16px;
 }

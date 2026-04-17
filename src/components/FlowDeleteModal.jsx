@@ -1,11 +1,14 @@
 import { useState } from "react";
 import {
-  Box,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
-  Modal,
-  SpaceBetween,
-  TextContent,
-} from "@cloudscape-design/components";
+  Text,
+} from "@fluentui/react-components";
 import useAlertsStore from "@/stores/useAlertsStore";
 import { useDelete } from "@/hooks/useFlows";
 
@@ -43,31 +46,32 @@ const FlowDeleteModal = ({
   };
 
   return (
-    <Modal
-      onDismiss={handleDismiss}
-      visible={modalVisible}
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
+    <Dialog open={modalVisible} onOpenChange={(_, data) => { if (!data.open) handleDismiss(); }}>
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>Confirmation</DialogTitle>
+          <DialogContent>
+            <Text>Are you sure you wish to DELETE the selected Flow(s)?</Text>
+          </DialogContent>
+          <DialogActions>
             <Button
-              variant="link"
+              appearance="secondary"
               disabled={isDeleting}
               onClick={handleDismiss}
             >
               No
             </Button>
-            <Button variant="primary" loading={isDeleting} onClick={deleteFlow}>
-              Yes
+            <Button
+              appearance="primary"
+              disabled={isDeleting}
+              onClick={deleteFlow}
+            >
+              {isDeleting ? "Deleting..." : "Yes"}
             </Button>
-          </SpaceBetween>
-        </Box>
-      }
-      header="Confirmation"
-    >
-      <TextContent>
-        Are you sure you wish to DELETE the selected Flow(s)?
-      </TextContent>
-    </Modal>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
   );
 };
 

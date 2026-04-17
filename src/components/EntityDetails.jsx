@@ -1,8 +1,5 @@
-import {
-  ColumnLayout,
-  SpaceBetween,
-  CopyToClipboard,
-} from "@cloudscape-design/components";
+import { Button, Tooltip } from "@fluentui/react-components";
+import { CopyRegular } from "@fluentui/react-icons";
 
 import { Link } from "react-router-dom";
 import ValueWithLabel from "@/components/ValueWithLabel";
@@ -20,6 +17,17 @@ const excludedFields = [
 ];
 
 const editableFields = ["label", "description"];
+
+const CopyButton = ({ text }) => (
+  <Tooltip content="Copy Id" relationship="label">
+    <Button
+      appearance="transparent"
+      icon={<CopyRegular />}
+      size="small"
+      onClick={() => navigator.clipboard.writeText(text)}
+    />
+  </Tooltip>
+);
 
 const EntityDetails = ({ entityType, entity }) => {
   if (!entity) return null;
@@ -80,15 +88,7 @@ const EntityDetails = ({ entityType, entity }) => {
     return (
       <>
         {value}
-        {label === "id" && (
-          <CopyToClipboard
-            copyButtonAriaLabel="Copy Id"
-            copyErrorText="Id failed to copy"
-            copySuccessText="Id copied"
-            textToCopy={value}
-            variant="icon"
-          />
-        )}
+        {label === "id" && <CopyButton text={value} />}
       </>
     );
   };
@@ -97,17 +97,17 @@ const EntityDetails = ({ entityType, entity }) => {
   const keyValueColumns = chunkArray(keyValues, 2);
 
   return (
-    <ColumnLayout columns={2} variant="text-grid">
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
       {keyValueColumns.map((chunk, index) => (
-        <SpaceBetween key={index} size="l">
+        <div key={index} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {chunk.map(([label, value]) => (
             <ValueWithLabel key={label} label={label}>
               {renderFieldValue(label, value)}
             </ValueWithLabel>
           ))}
-        </SpaceBetween>
+        </div>
       ))}
-    </ColumnLayout>
+    </div>
   );
 };
 

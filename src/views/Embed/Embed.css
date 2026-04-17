@@ -83,7 +83,7 @@
   padding: 8px;
 }
 
-/* Force Cloudscape text to white inside the dark embed config */
+/* Force text to white inside the dark embed config */
 .embed-config h2,
 .embed-config h3,
 .embed-config th,
@@ -185,8 +185,15 @@
 }
 
 @keyframes embed-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .embed-row-label {

@@ -1,7 +1,4 @@
-import {
-  Button,
-  SpaceBetween,
-} from "@cloudscape-design/components";
+import { Button } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import FlowActionsButton from "@/components/FlowActionsButton";
 
@@ -9,32 +6,25 @@ const EntityHeader = ({ type, entity }) => {
   const entityType = `${type.toLowerCase()}s`;
   const navigate = useNavigate();
 
-  const followLink = (e) => {
-    e.preventDefault();
-    navigate(e.detail.href);
-  };
-
   return (
-    <SpaceBetween size="xl" direction="horizontal">
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
       <span>{type} details</span>
       <Button
-        href={`/player/${entityType}/${entity.id}`}
-        variant="inline-link"
-        onFollow={followLink}
+        appearance="transparent"
+        onClick={() => navigate(`/player/${entityType}/${entity.id}`)}
       >
         View Player
       </Button>
       <Button
-        href={`/diagram/${entityType}/${entity.id}`}
-        variant="inline-link"
-        onFollow={followLink}
+        appearance="transparent"
+        onClick={() => navigate(`/diagram/${entityType}/${entity.id}`)}
       >
         View Diagram
       </Button>
       {entityType === "flows" && (
         <FlowActionsButton selectedItems={[entity]} />
       )}
-    </SpaceBetween>
+    </div>
   );
 };
 

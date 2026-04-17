@@ -1,12 +1,13 @@
 import {
-  Alert,
-  Box,
-  Header,
-  SpaceBetween,
+  MessageBar,
+  MessageBarBody,
   Spinner,
-  Tabs,
-} from "@cloudscape-design/components";
+  Text,
+  TabList,
+  Tab,
+} from "@fluentui/react-components";
 import { useParams } from "react-router-dom";
+import { useState } from "react";
 
 import CollectedBy from "@/components/CollectedBy";
 import Collection from "@/components/Collection";
@@ -20,76 +21,60 @@ import { useFlow } from "@/hooks/useFlows";
 const Flow = () => {
   const { flowId } = useParams();
   const { flow, isLoading: loadingFlow, error } = useFlow(flowId);
+  const [activeTab, setActiveTab] = useState("essence");
 
   if (error) {
     return (
-      <Alert type="error" header="Could not connect to TAMS store">
-        Failed to load flow from the active store. Check that the endpoint URL is correct and the store is reachable.
-        <Box margin={{ top: "xs" }} color="text-body-secondary" fontSize="body-s">
-          {error.message}
-        </Box>
-      </Alert>
+      <MessageBar intent="error">
+        <MessageBarBody>
+          <Text weight="semibold">Could not connect to TAMS store</Text>
+          <br />
+          Failed to load flow from the active store. Check that the endpoint URL is correct and the store is reachable.
+          <br />
+          <Text size={200}>{error.message}</Text>
+        </MessageBarBody>
+      </MessageBar>
     );
   }
 
+  const tabContent = {
+    essence: <EssenceParameters essenceParameters={flow?.essence_parameters} />,
+    tags: flow ? <Tags entityType="flows" entity={flow} /> : null,
+    flow_collection: (
+      <Collection entityType="flows" collection={flow?.flow_collection} />
+    ),
+    collected_by: (
+      <CollectedBy entityType="flows" collectedBy={flow?.collected_by} />
+    ),
+    segments: <SegmentsTab flowId={flowId} />,
+  };
+
   return !loadingFlow ? (
     flow ? (
-      <SpaceBetween size="l">
-        <Header variant="h2">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <Text as="h2" size={500} weight="semibold">
           <EntityHeader type="Flow" entity={flow} />
-        </Header>
+        </Text>
         <EntityDetails entityType="flows" entity={flow} />
-        <Tabs
-          tabs={[
-            {
-              label: "Essence Parameters",
-              id: "essence",
-              content: (
-                <EssenceParameters
-                  essenceParameters={flow?.essence_parameters}
-                />
-              ),
-            },
-            {
-              label: "Tags",
-              id: "tags",
-              content: <Tags entityType="flows" entity={flow} />,
-            },
-            {
-              label: "Flow collections",
-              id: "flow_collection",
-              content: (
-                <Collection
-                  entityType="flows"
-                  collection={flow.flow_collection}
-                />
-              ),
-            },
-            {
-              label: "Collected by",
-              id: "collected_by",
-              content: (
-                <CollectedBy
-                  entityType="flows"
-                  collectedBy={flow.collected_by}
-                />
-              ),
-            },
-            {
-              label: "Segments",
-              id: "segments",
-              content: <SegmentsTab flowId={flowId} />,
-            },
-          ]}
-        />
-      </SpaceBetween>
+        <TabList
+          selectedValue={activeTab}
+          onTabSelect={(_, data) => setActiveTab(data.value)}
+        >
+          <Tab value="essence">Essence Parameters</Tab>
+          <Tab value="tags">Tags</Tab>
+          <Tab value="flow_collection">Flow collections</Tab>
+          <Tab value="collected_by">Collected by</Tab>
+          <Tab value="segments">Segments</Tab>
+        </TabList>
+        <div>{tabContent[activeTab]}</div>
+      </div>
     ) : (
       `No flow found with the id ${flowId}`
     )
   ) : (
-    <Box textAlign="center">
+    <div style={{ textAlign: "center" }}>
       <Spinner />
-    </Box>
+    </div>
   );
 };
 

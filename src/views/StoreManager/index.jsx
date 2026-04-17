@@ -1,17 +1,31 @@
 import { useState } from "react";
 import {
-  Box,
+  Badge,
   Button,
-  Form,
-  FormField,
-  Header,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Field,
   Input,
-  Modal,
-  SpaceBetween,
-  StatusIndicator,
+  Spinner,
+  TabList,
+  Tab,
   Table,
-  Tabs,
-} from "@cloudscape-design/components";
+  TableHeader,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
+  TableCell,
+  Text,
+  tokens,
+} from "@fluentui/react-components";
+import {
+  CheckmarkCircleRegular,
+  DismissCircleRegular,
+} from "@fluentui/react-icons";
 import useStoreManager from "@/stores/useStoreManager";
 
 const AUTH_LABELS = {
@@ -157,248 +171,193 @@ const StoreManager = () => {
   const isFormValid = formName.trim() && formEndpoint.trim();
 
   return (
-    <SpaceBetween size="l">
-      <Table
-        header={
-          <Header
-            actions={
-              <Button variant="primary" onClick={handleAdd}>
-                Add Store
-              </Button>
-            }
-            description="Connect to TAMS store endpoints. Credentials are stored only in your browser's localStorage."
-          >
-            TAMS Stores
-          </Header>
-        }
-        items={stores}
-        trackBy="id"
-        variant="borderless"
-        empty={
-          <Box textAlign="center" color="inherit" padding="l">
-            <SpaceBetween size="m">
-              <b>No stores configured</b>
-              <Box color="text-body-secondary">
-                Add a TAMS store endpoint to get started.
-              </Box>
-              <Button onClick={handleAdd}>Add Store</Button>
-            </SpaceBetween>
-          </Box>
-        }
-        columnDefinitions={[
-          {
-            id: "active",
-            header: "",
-            width: 120,
-            cell: (item) =>
-              item.id === activeStoreId ? (
-                <StatusIndicator type="success">Active</StatusIndicator>
-              ) : (
-                <Button
-                  variant="inline-link"
-                  onClick={() => setActiveStore(item.id)}
-                >
-                  Set Active
-                </Button>
-              ),
-          },
-          {
-            id: "name",
-            header: "Name",
-            cell: (item) => item.name,
-          },
-          {
-            id: "endpoint",
-            header: "Endpoint",
-            cell: (item) => item.endpoint,
-          },
-          {
-            id: "auth",
-            header: "Auth",
-            width: 140,
-            cell: (item) => AUTH_LABELS[item.authType] || AUTH_LABELS.none,
-          },
-          {
-            id: "actions",
-            header: "Actions",
-            width: 300,
-            cell: (item) => (
-              <SpaceBetween size="xs" direction="horizontal">
-                <Button
-                  variant="inline-link"
-                  onClick={() => handleEdit(item)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="inline-link"
-                  onClick={() => removeStore(item.id)}
-                >
-                  Remove
-                </Button>
-              </SpaceBetween>
-            ),
-          },
-        ]}
-      />
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <Text size={500} weight="semibold">TAMS Stores</Text>
+          <br />
+          <Text size={200}>Connect to TAMS store endpoints. Credentials are stored only in your browser's localStorage.</Text>
+        </div>
+        <Button appearance="primary" onClick={handleAdd}>Add Store</Button>
+      </div>
 
-      <Modal
-        visible={modalVisible}
-        onDismiss={() => setModalVisible(false)}
-        header={editingStore ? "Edit Store" : "Add Store"}
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween size="xs" direction="horizontal">
-              <Button variant="link" onClick={() => setModalVisible(false)}>
-                Cancel
-              </Button>
+      {/* Table */}
+      {stores.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 32 }}>
+          <Text weight="semibold">No stores configured</Text>
+          <br />
+          <Text size={200}>Add a TAMS store endpoint to get started.</Text>
+          <br />
+          <Button style={{ marginTop: 8 }} onClick={handleAdd}>Add Store</Button>
+        </div>
+      ) : (
+        <Table size="small">
+          <TableHeader>
+            <TableRow>
+              <TableHeaderCell style={{ width: 120 }} />
+              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell>Endpoint</TableHeaderCell>
+              <TableHeaderCell style={{ width: 140 }}>Auth</TableHeaderCell>
+              <TableHeaderCell style={{ width: 200 }}>Actions</TableHeaderCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {stores.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>
+                  {item.id === activeStoreId ? (
+                    <Badge appearance="filled" color="success">Active</Badge>
+                  ) : (
+                    <Button
+                      appearance="transparent"
+                      size="small"
+                      onClick={() => setActiveStore(item.id)}
+                    >
+                      Set Active
+                    </Button>
+                  )}
+                </TableCell>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>{item.endpoint}</TableCell>
+                <TableCell>{AUTH_LABELS[item.authType] || AUTH_LABELS.none}</TableCell>
+                <TableCell>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <Button appearance="transparent" size="small" onClick={() => handleEdit(item)}>
+                      Edit
+                    </Button>
+                    <Button appearance="transparent" size="small" onClick={() => removeStore(item.id)}>
+                      Remove
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      {/* Modal */}
+      <Dialog open={modalVisible} onOpenChange={(_, data) => { if (!data.open) setModalVisible(false); }}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>{editingStore ? "Edit Store" : "Add Store"}</DialogTitle>
+            <DialogContent>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <Field label="Name" hint="A friendly name for this store.">
+                  <Input
+                    value={formName}
+                    onChange={(e, data) => setFormName(data.value)}
+                    placeholder="My TAMS Store"
+                  />
+                </Field>
+                <Field label="Endpoint URL" hint="The base URL of the TAMS API.">
+                  <Input
+                    value={formEndpoint}
+                    onChange={(e, data) => setFormEndpoint(data.value)}
+                    placeholder="https://tams.example.com"
+                    type="url"
+                  />
+                </Field>
+                <Field label="CuttingRoom TAMS ID" hint="The store identifier used in CuttingRoom CRL references. Lowercase letters, numbers, and hyphens only.">
+                  <Input
+                    value={formCuttingRoomTamsId}
+                    onChange={(e, data) =>
+                      setFormCuttingRoomTamsId(
+                        data.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                      )
+                    }
+                    placeholder="my-tams-store"
+                  />
+                </Field>
+                <Field label="Authentication">
+                  <TabList
+                    selectedValue={formAuthType}
+                    onTabSelect={(_, data) => {
+                      setFormAuthType(data.value);
+                      setTestStatus(null);
+                    }}
+                  >
+                    <Tab value="none">None</Tab>
+                    <Tab value="bearer">Bearer Token</Tab>
+                    <Tab value="client_credentials">Client / Secret</Tab>
+                  </TabList>
+                </Field>
+                {formAuthType === "none" && (
+                  <Text size={200}>No authentication. Use for public TAMS endpoints.</Text>
+                )}
+                {formAuthType === "bearer" && (
+                  <Field hint="A static Bearer token sent with every request.">
+                    <Input
+                      value={formToken}
+                      onChange={(e, data) => setFormToken(data.value)}
+                      placeholder="Token"
+                      type="password"
+                    />
+                  </Field>
+                )}
+                {formAuthType === "client_credentials" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <Field label="Token URL" hint="The OAuth2 token endpoint.">
+                      <Input
+                        value={formTokenUrl}
+                        onChange={(e, data) => setFormTokenUrl(data.value)}
+                        placeholder="https://auth.example.com/oauth2/token"
+                        type="url"
+                      />
+                    </Field>
+                    <Field label="Client ID">
+                      <Input
+                        value={formClientId}
+                        onChange={(e, data) => setFormClientId(data.value)}
+                        placeholder="Client ID"
+                      />
+                    </Field>
+                    <Field label="Client Secret">
+                      <Input
+                        value={formClientSecret}
+                        onChange={(e, data) => setFormClientSecret(data.value)}
+                        placeholder="Client Secret"
+                        type="password"
+                      />
+                    </Field>
+                    <Field label="Scope" hint="The OAuth2 scope for the token request (e.g. api://app-id/.default).">
+                      <Input
+                        value={formScope}
+                        onChange={(e, data) => setFormScope(data.value)}
+                        placeholder="api://app-id/.default"
+                      />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setModalVisible(false)}>Cancel</Button>
               <Button
-                variant="link"
+                appearance="secondary"
                 onClick={handleTest}
                 disabled={!formEndpoint.trim()}
+                icon={
+                  testStatus === "loading" ? <Spinner size="tiny" /> :
+                    testStatus === "success" ? <CheckmarkCircleRegular style={{ color: tokens.colorPaletteGreenForeground1 }} /> :
+                      testStatus === "error" ? <DismissCircleRegular style={{ color: tokens.colorPaletteRedForeground1 }} /> :
+                        undefined
+                }
               >
-                {testStatus === "loading" ? (
-                  <StatusIndicator type="loading">Testing</StatusIndicator>
-                ) : testStatus === "success" ? (
-                  <StatusIndicator type="success">Connected</StatusIndicator>
-                ) : testStatus === "error" ? (
-                  <StatusIndicator type="error">Failed</StatusIndicator>
-                ) : (
-                  "Test Connection"
-                )}
+                {testStatus === "loading" ? "Testing" :
+                  testStatus === "success" ? "Connected" :
+                    testStatus === "error" ? "Failed" :
+                      "Test Connection"}
               </Button>
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                disabled={!isFormValid}
-              >
+              <Button appearance="primary" onClick={handleSave} disabled={!isFormValid}>
                 {editingStore ? "Save" : "Add"}
               </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Form>
-          <SpaceBetween size="m">
-            <FormField label="Name" description="A friendly name for this store.">
-              <Input
-                value={formName}
-                onChange={({ detail }) => setFormName(detail.value)}
-                placeholder="My TAMS Store"
-              />
-            </FormField>
-            <FormField
-              label="Endpoint URL"
-              description="The base URL of the TAMS API."
-            >
-              <Input
-                value={formEndpoint}
-                onChange={({ detail }) => setFormEndpoint(detail.value)}
-                placeholder="https://tams.example.com"
-                type="url"
-              />
-            </FormField>
-            <FormField
-              label="CuttingRoom TAMS ID"
-              description="The store identifier used in CuttingRoom CRL references. Lowercase letters, numbers, and hyphens only."
-            >
-              <Input
-                value={formCuttingRoomTamsId}
-                onChange={({ detail }) =>
-                  setFormCuttingRoomTamsId(
-                    detail.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
-                  )
-                }
-                placeholder="my-tams-store"
-              />
-            </FormField>
-            <FormField label="Authentication">
-              <Tabs
-                activeTabId={formAuthType}
-                onChange={({ detail }) => {
-                  setFormAuthType(detail.activeTabId);
-                  setTestStatus(null);
-                }}
-                tabs={[
-                  {
-                    id: "none",
-                    label: "None",
-                    content: (
-                      <Box color="text-body-secondary" padding={{ top: "s" }}>
-                        No authentication. Use for public TAMS endpoints.
-                      </Box>
-                    ),
-                  },
-                  {
-                    id: "bearer",
-                    label: "Bearer Token",
-                    content: (
-                      <Box padding={{ top: "s" }}>
-                        <FormField description="A static Bearer token sent with every request.">
-                          <Input
-                            value={formToken}
-                            onChange={({ detail }) => setFormToken(detail.value)}
-                            placeholder="Token"
-                            type="password"
-                          />
-                        </FormField>
-                      </Box>
-                    ),
-                  },
-                  {
-                    id: "client_credentials",
-                    label: "Client / Secret",
-                    content: (
-                      <SpaceBetween size="s">
-                        <Box padding={{ top: "s" }}>
-                          <FormField
-                            label="Token URL"
-                            description="The OAuth2 token endpoint."
-                          >
-                            <Input
-                              value={formTokenUrl}
-                              onChange={({ detail }) => setFormTokenUrl(detail.value)}
-                              placeholder="https://auth.example.com/oauth2/token"
-                              type="url"
-                            />
-                          </FormField>
-                        </Box>
-                        <FormField label="Client ID">
-                          <Input
-                            value={formClientId}
-                            onChange={({ detail }) => setFormClientId(detail.value)}
-                            placeholder="Client ID"
-                          />
-                        </FormField>
-                        <FormField label="Client Secret">
-                          <Input
-                            value={formClientSecret}
-                            onChange={({ detail }) => setFormClientSecret(detail.value)}
-                            placeholder="Client Secret"
-                            type="password"
-                          />
-                        </FormField>
-                        <FormField
-                          label="Scope"
-                          description="The OAuth2 scope for the token request (e.g. api://app-id/.default)."
-                        >
-                          <Input
-                            value={formScope}
-                            onChange={({ detail }) => setFormScope(detail.value)}
-                            placeholder="api://app-id/.default"
-                          />
-                        </FormField>
-                      </SpaceBetween>
-                    ),
-                  },
-                ]}
-              />
-            </FormField>
-          </SpaceBetween>
-        </Form>
-      </Modal>
-    </SpaceBetween>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+    </div>
   );
 };
 

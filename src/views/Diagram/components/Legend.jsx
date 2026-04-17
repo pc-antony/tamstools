@@ -1,7 +1,8 @@
-import { colorTextLabel } from "@cloudscape-design/design-tokens";
+import { tokens } from "@fluentui/react-components";
 import { styles } from "../constants.js";
 
 const Legend = () => {
+  const labelColor = tokens.colorNeutralForeground2;
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="48rem" viewBox="0 0 782 40">
       <g id="source">
@@ -57,7 +58,7 @@ const Legend = () => {
           strokeWidth="2"
           strokeLinecap="round"
         />
-        <text x="322" y="30" fill={colorTextLabel} fontWeight="bold">
+        <text x="322" y="30" fill={labelColor} fontWeight="bold">
           Represents
         </text>
       </g>
@@ -88,7 +89,7 @@ const Legend = () => {
           strokeWidth="2"
           strokeLinecap="round"
         />
-        <text x="482" y="30" fill={colorTextLabel} fontWeight="bold">
+        <text x="482" y="30" fill={labelColor} fontWeight="bold">
           Collects
         </text>
       </g>
@@ -120,7 +121,7 @@ const Legend = () => {
           strokeWidth="2"
           strokeLinecap="round"
         />
-        <text x="642" y="30" fill={colorTextLabel} fontWeight="bold">
+        <text x="642" y="30" fill={labelColor} fontWeight="bold">
           Collects (Implied)
         </text>
       </g>

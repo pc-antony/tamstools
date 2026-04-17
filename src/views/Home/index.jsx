@@ -1,12 +1,11 @@
 import ReactMarkdown from "react-markdown";
 import {
-  Box,
   Button,
-  Container,
-  Header,
-  SpaceBetween,
-  TextContent,
-} from "@cloudscape-design/components";
+  Card,
+  CardHeader,
+  Text,
+  tokens,
+} from "@fluentui/react-components";
 import remarkGfm from "remark-gfm";
 import { useNavigate } from "react-router-dom";
 
@@ -42,22 +41,27 @@ const Home = () => {
   const navigate = useNavigate();
 
   return (
-    <SpaceBetween size="l">
-      <Container
-        header={<Header variant="h1">Welcome to TAMS Store Browser</Header>}
-      >
-        <TextContent>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <Card>
+        <CardHeader
+          header={<Text size={600} weight="semibold">Welcome to TAMS Store Browser</Text>}
+        />
+        <div style={{ padding: "0 16px 16px" }}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {pageMarkdown}
           </ReactMarkdown>
-        </TextContent>
-        <Box margin={{ top: "l" }}>
-          <Button variant="primary" onClick={() => navigate("/stores")}>
-            Manage Stores
-          </Button>
-        </Box>
-      </Container>
-      <Box textAlign="center" color="text-body-secondary" fontSize="body-s">
+          <div style={{ marginTop: 16 }}>
+            <Button appearance="primary" onClick={() => navigate("/stores")}>
+              Manage Stores
+            </Button>
+          </div>
+        </div>
+      </Card>
+      <Text
+        align="center"
+        size={200}
+        style={{ color: tokens.colorNeutralForeground3 }}
+      >
         Modified from AWS TAMS Tools for Azure{" "}
         |{" "}
         <a
@@ -76,8 +80,8 @@ const Home = () => {
         >
           Avanade
         </a>
-      </Box>
-    </SpaceBetween>
+      </Text>
+    </div>
   );
 };
 

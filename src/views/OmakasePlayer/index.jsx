@@ -2,7 +2,7 @@ import "@byomakase/omakase-player/dist/style.css";
 import "@byomakase/omakase-react-components/dist/omakase-react-components.css";
 
 import { OmakasePlayerTamsComponent } from ".";
-import { Spinner, Box } from "@cloudscape-design/components";
+import { Spinner, Text } from "@fluentui/react-components";
 import { useOmakaseData } from "@/hooks/useOmakaseData";
 import { useParams } from "react-router-dom";
 import { useState } from "react";
@@ -22,7 +22,7 @@ export const OmakaseHlsPlayer = () => {
   } = useOmakaseData(type, id, timerange);
 
   if (!isLoading && !flow) {
-    return <Box textAlign="center">{`No valid ${type} found`}</Box>;
+    return <div style={{ textAlign: "center" }}><Text>{`No valid ${type} found`}</Text></div>;
   }
   if (!isLoading && flowSegments) {
     const hasSegments =
@@ -30,12 +30,12 @@ export const OmakaseHlsPlayer = () => {
       undefined;
 
     if (!hasSegments) {
-      return <Box textAlign="center">Selected timerange has no segments</Box>;
+      return <div style={{ textAlign: "center" }}><Text>Selected timerange has no segments</Text></div>;
     }
   }
 
   return !isLoading ? (
-    <Box>
+    <div>
       <OmakasePlayerTamsComponent
         sourceId={sourceId}
         flow={flow}
@@ -46,11 +46,11 @@ export const OmakaseHlsPlayer = () => {
         setTimeRange={setTimerange}
         displayConfig={{}}
       />
-    </Box>
+    </div>
   ) : (
-    <Box textAlign="center">
-      Loading Media <Spinner />
-    </Box>
+    <div style={{ textAlign: "center" }}>
+      Loading Media <Spinner size="small" />
+    </div>
   );
 };
 

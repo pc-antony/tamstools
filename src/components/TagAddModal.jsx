@@ -1,13 +1,16 @@
 import { useState } from "react";
 import {
-  Box,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
-  Checkbox,
-  FormField,
   Input,
-  Modal,
-  SpaceBetween,
-} from "@cloudscape-design/components";
+  Field,
+  Checkbox,
+} from "@fluentui/react-components";
 import { useUpdate } from "@/hooks/useTags";
 import { useTagPropagation } from "@/hooks/useTagPropagation";
 
@@ -42,48 +45,46 @@ const TagAddModal = ({ modalVisible, setModalVisible, entityType, entity }) => {
   };
 
   return (
-    <Modal
-      onDismiss={handleDismiss}
-      visible={modalVisible}
-      header="Add tag"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button variant="link" disabled={isLoading} onClick={handleDismiss}>
+    <Dialog open={modalVisible} onOpenChange={(_, data) => { if (!data.open) handleDismiss(); }}>
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>Add tag</DialogTitle>
+          <DialogContent>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Field label="Name" hint="Provide a name for the tag.">
+                <Input
+                  value={tagName}
+                  onChange={(e, data) => setTagName(data.value)}
+                />
+              </Field>
+              <Field label="Value" hint="Provide a value for the tag.">
+                <Input
+                  value={tagValue}
+                  onChange={(e, data) => setTagValue(data.value)}
+                />
+              </Field>
+              <Checkbox
+                checked={propagate}
+                onChange={(e, data) => setPropagate(data.checked)}
+                label="Propagate"
+              />
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button appearance="secondary" disabled={isLoading} onClick={handleDismiss}>
               Cancel
             </Button>
             <Button
-              variant="primary"
-              loading={isLoading}
+              appearance="primary"
+              disabled={isLoading}
               onClick={handleConfirm}
             >
-              Add
+              {isLoading ? "Adding..." : "Add"}
             </Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <SpaceBetween size="xs">
-        <FormField description="Provide a name for the tag." label="Name">
-          <Input
-            value={tagName}
-            onChange={({ detail }) => setTagName(detail.value)}
-          />
-        </FormField>
-        <FormField description="Provide a value for the tag." label="Value">
-          <Input
-            value={tagValue}
-            onChange={({ detail }) => setTagValue(detail.value)}
-          />
-        </FormField>
-        <Checkbox
-          checked={propagate}
-          onChange={({ detail }) => setPropagate(detail.checked)}
-        >
-          Propagate
-        </Checkbox>
-      </SpaceBetween>
-    </Modal>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
   );
 };
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Input, Button, SpaceBetween } from "@cloudscape-design/components";
+import { Input, Button } from "@fluentui/react-components";
+import { DismissRegular, CheckmarkRegular, EditRegular } from "@fluentui/react-icons";
 import { useUpdateField } from "@/hooks/useUpdateField";
 
 const EditableField = ({ entityType, entityId, field, value, children }) => {
@@ -21,33 +22,36 @@ const EditableField = ({ entityType, entityId, field, value, children }) => {
     setIsEditing(false);
   };
 
-  const handleKeyDown = ({detail}) => {
-    if (detail.key === "Enter") handleSave();
-    if (detail.key === "Escape") handleCancel();
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSave();
+    if (e.key === "Escape") handleCancel();
   };
 
   return (
-    <SpaceBetween direction="horizontal" size="xs" alignItems="center">
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
       {isEditing ? (
         <>
           <Input
             value={editValue}
-            onChange={({ detail }) => setEditValue(detail.value)}
+            onChange={(e, data) => setEditValue(data.value)}
             onKeyDown={handleKeyDown}
             disabled={isUpdating}
             autoFocus
+            size="small"
           />
           <Button
-            variant="inline-icon"
-            iconName="close"
+            appearance="transparent"
+            icon={<DismissRegular />}
             onClick={handleCancel}
             disabled={isUpdating}
+            size="small"
           />
           <Button
-            variant="inline-icon"
-            iconName="check"
+            appearance="transparent"
+            icon={<CheckmarkRegular />}
             onClick={handleSave}
-            loading={isUpdating}
+            disabled={isUpdating}
+            size="small"
           />
         </>
       ) : (
@@ -55,10 +59,15 @@ const EditableField = ({ entityType, entityId, field, value, children }) => {
           <div onClick={handleEdit} style={{ cursor: "pointer", flex: 1 }}>
             {children}
           </div>
-          <Button variant="icon" iconName="edit" onClick={handleEdit} />
+          <Button
+            appearance="transparent"
+            icon={<EditRegular />}
+            onClick={handleEdit}
+            size="small"
+          />
         </>
       )}
-    </SpaceBetween>
+    </div>
   );
 };
 

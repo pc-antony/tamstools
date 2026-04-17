@@ -1,172 +1,51 @@
 import { PAGE_SIZE_PREFERENCE } from "@/constants";
 import {
-  Alert,
-  Box,
-  CollectionPreferences,
-  CopyToClipboard,
-  Header,
-  Pagination,
-  SpaceBetween,
+  MessageBar,
+  MessageBarBody,
+  Button,
+  Input,
+  Spinner,
+  Switch,
+  Text,
+  Tooltip,
   Table,
-  TextFilter,
-  Toggle,
-} from "@cloudscape-design/components";
+  TableHeader,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
+  TableCell,
+} from "@fluentui/react-components";
+import { CopyRegular } from "@fluentui/react-icons";
 import { useFlows } from "@/hooks/useFlows";
 import { Link } from "react-router-dom";
-import { useCollection } from "@cloudscape-design/collection-hooks";
+import { useCollection } from "@/hooks/useCollection";
 import usePreferencesStore from "@/stores/usePreferencesStore";
 import FlowActionsButton from "@/components/FlowActionsButton";
 
 const columnDefinitions = [
-  {
-    id: "id",
-    header: "Id",
-    cell: (item) => (
-      <>
-        <Link to={`/flows/${item.id}`}>{item.id}</Link>
-        <CopyToClipboard
-          copyButtonAriaLabel="Copy Id"
-          copyErrorText="Id failed to copy"
-          copySuccessText="Id copied"
-          textToCopy={item.id}
-          variant="icon"
-        />
-      </>
-    ),
-    sortingField: "id",
-    isRowHeader: true,
-    width: 360,
-  },
-  {
-    id: "label",
-    header: "Label",
-    cell: (item) => item.label,
-    sortingField: "label",
-  },
-  {
-    id: "description",
-    header: "Description",
-    cell: (item) => item.description,
-    sortingField: "description",
-  },
-  {
-    id: "format",
-    header: "Format",
-    cell: (item) => item.format,
-    sortingField: "format",
-  },
-  {
-    id: "created_by",
-    header: "Created by",
-    cell: (item) => item.created_by,
-    sortingField: "created_by",
-  },
-  {
-    id: "updated_by",
-    header: "Modified by",
-    cell: (item) => item.updated_by,
-    sortingField: "updated_by",
-  },
-  {
-    id: "created",
-    header: "Created",
-    cell: (item) => item.created,
-    sortingField: "created",
-  },
-  {
-    id: "tags",
-    header: "Tags",
-    cell: (item) => item.tags,
-    sortingField: "tags",
-  },
-  {
-    id: "flow_collection",
-    header: "Flow collection",
-    cell: (item) => item.flow_collection,
-    sortingField: "flow_collection",
-  },
-  {
-    id: "collected_by",
-    header: "Collected by",
-    cell: (item) => item.collected_by,
-    sortingField: "collected_by",
-  },
-  {
-    id: "source_id",
-    header: "Source id",
-    cell: (item) => item.source_id,
-    sortingField: "source_id",
-  },
-  {
-    id: "metadata_version",
-    header: "Metadata version",
-    cell: (item) => item.metadata_version,
-    sortingField: "metadata_version",
-  },
-  {
-    id: "generation",
-    header: "Generation",
-    cell: (item) => item.generation,
-    sortingField: "generation",
-  },
-  {
-    id: "metadata_updated",
-    header: "Metadata updated",
-    cell: (item) => item.metadata_updated,
-    sortingField: "metadata_updated",
-  },
-  {
-    id: "read_only",
-    header: "Read only",
-    cell: (item) => item.read_only,
-    sortingField: "read_only",
-  },
-  {
-    id: "codec",
-    header: "Codec",
-    cell: (item) => item.codec,
-    sortingField: "codec",
-  },
-  {
-    id: "container",
-    header: "Container",
-    cell: (item) => item.container,
-    sortingField: "container",
-  },
-  {
-    id: "avg_bit_rate",
-    header: "Avg bit rate",
-    cell: (item) => item.avg_bit_rate,
-    sortingField: "avg_bit_rate",
-  },
-  {
-    id: "max_bit_rate",
-    header: "Max bit rate",
-    cell: (item) => item.max_bit_rate,
-    sortingField: "max_bit_rate",
-  },
+  { id: "id", header: "Id", sortingField: "id", accessor: (item) => item.id },
+  { id: "label", header: "Label", sortingField: "label", accessor: (item) => item.label },
+  { id: "description", header: "Description", sortingField: "description", accessor: (item) => item.description },
+  { id: "format", header: "Format", sortingField: "format", accessor: (item) => item.format },
+  { id: "created_by", header: "Created by", sortingField: "created_by", accessor: (item) => item.created_by },
+  { id: "updated_by", header: "Modified by", sortingField: "updated_by", accessor: (item) => item.updated_by },
+  { id: "created", header: "Created", sortingField: "created", accessor: (item) => item.created },
+  { id: "tags", header: "Tags", sortingField: "tags", accessor: (item) => item.tags },
+  { id: "flow_collection", header: "Flow collection", sortingField: "flow_collection", accessor: (item) => item.flow_collection },
+  { id: "collected_by", header: "Collected by", sortingField: "collected_by", accessor: (item) => item.collected_by },
+  { id: "source_id", header: "Source id", sortingField: "source_id", accessor: (item) => item.source_id },
+  { id: "metadata_version", header: "Metadata version", sortingField: "metadata_version", accessor: (item) => item.metadata_version },
+  { id: "generation", header: "Generation", sortingField: "generation", accessor: (item) => item.generation },
+  { id: "metadata_updated", header: "Metadata updated", sortingField: "metadata_updated", accessor: (item) => item.metadata_updated },
+  { id: "read_only", header: "Read only", sortingField: "read_only", accessor: (item) => item.read_only },
+  { id: "codec", header: "Codec", sortingField: "codec", accessor: (item) => item.codec },
+  { id: "container", header: "Container", sortingField: "container", accessor: (item) => item.container },
+  { id: "avg_bit_rate", header: "Avg bit rate", sortingField: "avg_bit_rate", accessor: (item) => item.avg_bit_rate },
+  { id: "max_bit_rate", header: "Max bit rate", sortingField: "max_bit_rate", accessor: (item) => item.max_bit_rate },
 ];
-const collectionPreferencesProps = {
-  pageSizePreference: PAGE_SIZE_PREFERENCE,
-  contentDisplayPreference: {
-    title: "Column preferences",
-    description: "Customize the columns visibility and order.",
-    options: columnDefinitions.map(({ id, header }) => ({
-      id,
-      label: header,
-      alwaysVisible: id === "id",
-    })),
-  },
-  cancelLabel: "Cancel",
-  confirmLabel: "Confirm",
-  title: "Preferences",
-};
 
 const Flows = () => {
   const preferences = usePreferencesStore((state) => state.flowsPreferences);
-  const setPreferences = usePreferencesStore(
-    (state) => state.setFlowsPreferences
-  );
   const showHierarchy = usePreferencesStore(
     (state) => state.flowsShowHierarchy
   );
@@ -182,16 +61,8 @@ const Flows = () => {
           item.collected_by?.length ? item.collected_by[0] : null,
       },
       filtering: {
-        empty: (
-          <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
-            <b>No flows</b>
-          </Box>
-        ),
-        noMatch: (
-          <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
-            <b>No matches</b>
-          </Box>
-        ),
+        empty: <Text weight="semibold" align="center">No flows</Text>,
+        noMatch: <Text weight="semibold" align="center">No matches</Text>,
       },
       pagination: { pageSize: preferences.pageSize },
       sorting: {
@@ -204,60 +75,120 @@ const Flows = () => {
     });
   const { selectedItems } = collectionProps;
 
+  const visibleIds = new Set(
+    preferences.contentDisplay
+      ?.filter((c) => c.visible)
+      .map((c) => c.id) ?? columnDefinitions.map((c) => c.id)
+  );
+  const visibleColumns = columnDefinitions.filter((c) => visibleIds.has(c.id));
+
   if (error) {
     return (
-      <Alert type="error" header="Could not connect to TAMS store">
-        Failed to load flows from the active store. Check that the endpoint URL is correct and the store is reachable.
-        <Box margin={{ top: "xs" }} color="text-body-secondary" fontSize="body-s">
-          {error.message}
-        </Box>
-      </Alert>
+      <MessageBar intent="error">
+        <MessageBarBody>
+          <Text weight="semibold">Could not connect to TAMS store</Text>
+          <br />
+          Failed to load flows from the active store. Check that the endpoint URL is correct and the store is reachable.
+          <br />
+          <Text size={200}>{error.message}</Text>
+        </MessageBarBody>
+      </MessageBar>
     );
   }
 
+  if (isLoading) return <Spinner label="Loading resources" />;
+
   return (
-    <Table
-      header={
-        <Header
-          actions={
-            <SpaceBetween
-              size="xs"
-              direction="horizontal"
-              alignItems="center"
-            >
-              <FlowActionsButton selectedItems={selectedItems} />
-              <Toggle
-                onChange={({ detail }) => setShowHierarchy(detail.checked)}
-                checked={showHierarchy}
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Text size={500} weight="semibold">Flows</Text>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <FlowActionsButton selectedItems={selectedItems} />
+          <Switch
+            checked={showHierarchy}
+            onChange={(_, data) => setShowHierarchy(data.checked)}
+            label="Hierarchical View"
+          />
+        </div>
+      </div>
+
+      {/* Filter */}
+      <Input
+        placeholder="Filter flows..."
+        value={filterProps.filteringText}
+        onChange={(e, data) => filterProps.onChange(data.value)}
+        style={{ maxWidth: 300 }}
+      />
+
+      {/* Table */}
+      <Table size="small">
+        <TableHeader>
+          <TableRow>
+            {visibleColumns.map((col) => (
+              <TableHeaderCell
+                key={col.id}
+                style={{ cursor: "pointer" }}
+                onClick={() => collectionProps.onSortingChange(col)}
               >
-                Hierarchical View
-              </Toggle>
-            </SpaceBetween>
-          }
-        >
-          Flows
-        </Header>
-      }
-      {...collectionProps}
-      variant="borderless"
-      loadingText="Loading resources"
-      loading={isLoading}
-      trackBy="id"
-      selectionType="multi"
-      columnDefinitions={columnDefinitions}
-      columnDisplay={preferences.contentDisplay}
-      contentDensity="compact"
-      items={items}
-      pagination={<Pagination {...paginationProps} />}
-      filter={<TextFilter {...filterProps} />}
-      preferences={
-        <CollectionPreferences
-          {...collectionPreferencesProps}
-          preferences={preferences}
-          onConfirm={({ detail }) => setPreferences(detail)}
-        />
-      }
-    />
+                {col.header}
+                {collectionProps.sortingColumn?.sortingField === col.sortingField
+                  ? collectionProps.sortingDescending ? " ↓" : " ↑"
+                  : ""}
+              </TableHeaderCell>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.id}>
+              {visibleColumns.map((col) => (
+                <TableCell key={col.id}>
+                  {col.id === "id" ? (
+                    <>
+                      <Link to={`/flows/${item.id}`}>{item.id}</Link>
+                      <Tooltip content="Copy Id" relationship="label">
+                        <Button
+                          appearance="transparent"
+                          icon={<CopyRegular />}
+                          size="small"
+                          onClick={() => navigator.clipboard.writeText(item.id)}
+                        />
+                      </Tooltip>
+                    </>
+                  ) : (
+                    col.accessor(item)
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Pagination */}
+      {paginationProps.pagesCount > 1 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+          <Button
+            appearance="subtle"
+            disabled={paginationProps.currentPageIndex <= 1}
+            onClick={() => paginationProps.onChange(paginationProps.currentPageIndex - 1)}
+          >
+            Previous
+          </Button>
+          <Text>
+            Page {paginationProps.currentPageIndex} of {paginationProps.pagesCount}
+          </Text>
+          <Button
+            appearance="subtle"
+            disabled={paginationProps.currentPageIndex >= paginationProps.pagesCount}
+            onClick={() => paginationProps.onChange(paginationProps.currentPageIndex + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 ---
-description: "Use when creating or modifying React components, views, modals, or page layouts. Covers component structure, Cloudscape usage, and view patterns."
+description: "Use when creating or modifying React components, views, modals, or page layouts. Covers component structure, Fluent UI usage, and view patterns."
 applyTo: "**"
 ---
 
@@ -8,22 +8,23 @@ applyTo: "**"
 ## Component Structure
 ```jsx
 import { useState } from "react"
-import { Box } from "@cloudscape-design/components"
+import { Text } from "@fluentui/react-components"
 import { useHook } from "@/hooks/useHook"
 
 const MyComponent = ({ prop1, prop2 }) => {
   const [state, setState] = useState(null)
   // ...
-  return <Box>...</Box>
+  return <div>...</div>
 }
 
 export default MyComponent
 ```
 
 ## UI Library
-- Use **Cloudscape Design** (`@cloudscape-design/components`) for all UI primitives — buttons, tables, forms, modals, alerts, tabs, etc.
-- Wrap page content in `<SpaceBetween size="l">` for consistent spacing
-- Use `<Container header={<Header>}>` for content sections
+- Use **Fluent UI** (`@fluentui/react-components`) for all UI primitives — buttons, tables, forms, modals (Dialog), alerts (MessageBar), tabs, etc.
+- Use `@fluentui/react-icons` for icons
+- Use flex layout with gap for consistent spacing
+- Use `<Text>` for typography and `tokens` for design token values
 
 ## Views / Pages
 - Each view lives in `src/views/<Name>/index.jsx`
@@ -33,15 +34,15 @@ export default MyComponent
 ```jsx
 const Page = () => {
   const { data, isLoading, error } = useDataHook()
-  if (error) return <Alert type="error">...</Alert>
+  if (error) return <MessageBar intent="error">...</MessageBar>
   if (isLoading) return <Spinner />
-  return <SpaceBetween size="l">...</SpaceBetween>
+  return <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>...</div>
 }
 ```
 
 ## Modals
 - Manage modal visibility with local `useState` in the parent component
-- Pass `visible` and `onDismiss` props to modal components
+- Use `<Dialog open={...} onOpenChange={...}>` with `DialogSurface`, `DialogBody`, `DialogTitle`, `DialogContent`, `DialogActions`
 - Modal trigger and modal component are siblings (see `FlowActionsButton` pattern)
 
 ## Routing
