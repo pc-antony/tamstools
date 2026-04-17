@@ -14,7 +14,7 @@ import {
   TableBody,
   TableCell,
 } from "@fluentui/react-components";
-import { CopyRegular } from "@fluentui/react-icons";
+import { CopyRegular, ChevronDownRegular, ChevronRightRegular } from "@fluentui/react-icons";
 
 import { Link } from "react-router-dom";
 import { useCollection } from "@/hooks/useCollection";
@@ -45,7 +45,7 @@ const Sources = () => {
     (state) => state.setSourcesShowHierarchy
   );
   const { sources, isLoading, error } = useSources();
-  const { items, collectionProps, filterProps, paginationProps } =
+  const { items, collectionProps, filterProps, paginationProps, expandableProps } =
     useCollection(isLoading || error ? [] : sources ?? [], {
       expandableRows: showHierarchy && {
         getId: (item) => item.id,
@@ -132,23 +132,40 @@ const Sources = () => {
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id}>
-              {visibleColumns.map((col) => (
+              {visibleColumns.map((col, colIndex) => (
                 <TableCell key={col.id}>
-                  {col.id === "id" ? (
-                    <>
-                      <Link to={`/sources/${item.id}`}>{item.id}</Link>
-                      <Tooltip content="Copy Id" relationship="label">
-                        <Button
-                          appearance="transparent"
-                          icon={<CopyRegular />}
-                          size="small"
-                          onClick={() => navigator.clipboard.writeText(item.id)}
-                        />
-                      </Tooltip>
-                    </>
-                  ) : (
-                    col.accessor(item)
-                  )}
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    paddingLeft: colIndex === 0 && expandableProps ? expandableProps.getDepth(item) * 24 : 0,
+                  }}>
+                    {colIndex === 0 && expandableProps && expandableProps.isExpandable(item) ? (
+                      <Button
+                        appearance="transparent"
+                        icon={expandableProps.isExpanded(item) ? <ChevronDownRegular /> : <ChevronRightRegular />}
+                        size="small"
+                        onClick={() => expandableProps.toggle(item)}
+                        style={{ minWidth: "auto", padding: 0, marginRight: 4 }}
+                      />
+                    ) : colIndex === 0 && expandableProps ? (
+                      <span style={{ width: 28 }} />
+                    ) : null}
+                    {col.id === "id" ? (
+                      <>
+                        <Link to={`/sources/${item.id}`}>{item.id}</Link>
+                        <Tooltip content="Copy Id" relationship="label">
+                          <Button
+                            appearance="transparent"
+                            icon={<CopyRegular />}
+                            size="small"
+                            onClick={() => navigator.clipboard.writeText(item.id)}
+                          />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      col.accessor(item)
+                    )}
+                  </div>
                 </TableCell>
               ))}
             </TableRow>

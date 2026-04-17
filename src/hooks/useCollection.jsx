@@ -55,15 +55,34 @@ export const useCollection = (allItems, options = {}) => {
         return { roots: rootList, childrenMap: map };
     }, [allItems, expandableRows]);
 
-    // Flatten expanded hierarchy
+    // Comparator for sorting
+    const comparator = useMemo(() => {
+        if (!sortingColumn?.sortingField) return null;
+        const field = sortingColumn.sortingField;
+        return (a, b) => {
+            const aVal = a[field] ?? "";
+            const bVal = b[field] ?? "";
+            const cmp = String(aVal).localeCompare(String(bVal), undefined, {
+                numeric: true,
+            });
+            return isDescending ? -cmp : cmp;
+        };
+    }, [sortingColumn, isDescending]);
+
+    // Sort roots and children per-level, then flatten expanded hierarchy
     const flatItems = useMemo(() => {
-        if (!expandableRows || !childrenMap) return roots;
+        if (!expandableRows || !childrenMap) {
+            // No hierarchy — just sort the flat list
+            return comparator ? [...roots].sort(comparator) : roots;
+        }
+        const sortList = (list) =>
+            comparator ? [...list].sort(comparator) : list;
         const result = [];
         const expandedSet = new Set(
             expandedItems.map((i) => expandableRows.getId(i))
         );
         const walk = (items, depth) => {
-            for (const item of items) {
+            for (const item of sortList(items)) {
                 result.push({ ...item, __depth: depth });
                 const id = expandableRows.getId(item);
                 if (expandedSet.has(id)) {
@@ -74,7 +93,7 @@ export const useCollection = (allItems, options = {}) => {
         };
         walk(roots, 0);
         return result;
-    }, [roots, childrenMap, expandedItems, expandableRows]);
+    }, [roots, childrenMap, expandedItems, expandableRows, comparator]);
 
     // Filter
     const filtered = useMemo(() => {
@@ -87,28 +106,14 @@ export const useCollection = (allItems, options = {}) => {
         );
     }, [flatItems, filteringText]);
 
-    // Sort
-    const sorted = useMemo(() => {
-        if (!sortingColumn?.sortingField) return filtered;
-        const field = sortingColumn.sortingField;
-        return [...filtered].sort((a, b) => {
-            const aVal = a[field] ?? "";
-            const bVal = b[field] ?? "";
-            const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-                numeric: true,
-            });
-            return isDescending ? -cmp : cmp;
-        });
-    }, [filtered, sortingColumn, isDescending]);
-
     // Paginate
-    const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
     const safePageIndex = Math.min(currentPageIndex, totalPages);
     const items = useMemo(() => {
-        if (!paginationOpts) return sorted;
+        if (!paginationOpts) return filtered;
         const start = (safePageIndex - 1) * pageSize;
-        return sorted.slice(start, start + pageSize);
-    }, [sorted, safePageIndex, pageSize, paginationOpts]);
+        return filtered.slice(start, start + pageSize);
+    }, [filtered, safePageIndex, pageSize, paginationOpts]);
 
     const handleSort = useCallback(
         (column) => {
@@ -145,6 +150,39 @@ export const useCollection = (allItems, options = {}) => {
             pagesCount: totalPages,
             onChange: setCurrentPageIndex,
         },
-        empty: filtered.length === 0 ? (filteringText ? filteringOpts?.noMatch : filteringOpts?.empty) : null,
+        expandableProps: expandableRows
+            ? {
+                  isExpandable: (item) => {
+                      const id = expandableRows.getId(item);
+                      return (childrenMap?.get(id)?.length ?? 0) > 0;
+                  },
+                  isExpanded: (item) => {
+                      const id = expandableRows.getId(item);
+                      return expandedItems.some(
+                          (i) => expandableRows.getId(i) === id
+                      );
+                  },
+                  toggle: (item) => {
+                      const id = expandableRows.getId(item);
+                      setExpandedItems((prev) => {
+                          const exists = prev.some(
+                              (i) => expandableRows.getId(i) === id
+                          );
+                          return exists
+                              ? prev.filter(
+                                    (i) => expandableRows.getId(i) !== id
+                                )
+                              : [...prev, item];
+                      });
+                  },
+                  getDepth: (item) => item.__depth ?? 0,
+              }
+            : null,
+        empty:
+            filtered.length === 0
+                ? filteringText
+                    ? filteringOpts?.noMatch
+                    : filteringOpts?.empty
+                : null,
     };
 };
