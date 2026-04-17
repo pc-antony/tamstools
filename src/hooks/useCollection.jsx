@@ -152,31 +152,31 @@ export const useCollection = (allItems, options = {}) => {
         },
         expandableProps: expandableRows
             ? {
-                  isExpandable: (item) => {
-                      const id = expandableRows.getId(item);
-                      return (childrenMap?.get(id)?.length ?? 0) > 0;
-                  },
-                  isExpanded: (item) => {
-                      const id = expandableRows.getId(item);
-                      return expandedItems.some(
-                          (i) => expandableRows.getId(i) === id
-                      );
-                  },
-                  toggle: (item) => {
-                      const id = expandableRows.getId(item);
-                      setExpandedItems((prev) => {
-                          const exists = prev.some(
-                              (i) => expandableRows.getId(i) === id
-                          );
-                          return exists
-                              ? prev.filter(
-                                    (i) => expandableRows.getId(i) !== id
-                                )
-                              : [...prev, item];
-                      });
-                  },
-                  getDepth: (item) => item.__depth ?? 0,
-              }
+                isExpandable: (item) => {
+                    const id = expandableRows.getId(item);
+                    return (childrenMap?.get(id)?.length ?? 0) > 0;
+                },
+                isExpanded: (item) => {
+                    const id = expandableRows.getId(item);
+                    return expandedItems.some(
+                        (i) => expandableRows.getId(i) === id
+                    );
+                },
+                toggle: (item) => {
+                    const id = expandableRows.getId(item);
+                    setExpandedItems((prev) => {
+                        const exists = prev.some(
+                            (i) => expandableRows.getId(i) === id
+                        );
+                        return exists
+                            ? prev.filter(
+                                (i) => expandableRows.getId(i) !== id
+                            )
+                            : [...prev, item];
+                    });
+                },
+                getDepth: (item) => item.__depth ?? 0,
+            }
             : null,
         empty:
             filtered.length === 0
