@@ -152,8 +152,7 @@ const getSegmentationTimerange = async (flows, api) => {
   const windowTimerangeStr = toTimerangeString(windowTimerange);
 
   const windowSegments = await paginationFetcher(
-    `/flows/${
-      earliestEndFlow.id
+    `/flows/${earliestEndFlow.id
     }/segments?presigned=true${windowTimerangeStr && windowTimerangeStr !== "_" ? `&timerange=${windowTimerangeStr}` : ""}`, null, api
   );
 
@@ -235,6 +234,21 @@ const getOmakaseData = async (api, { type, id, timerange }) => {
     );
 
   const flowSegments = Object.fromEntries(await Promise.all(fetchPromises));
+
+  // For mux (multi) flows, segments live on the parent flow rather than on
+  // individual child flows. The player library looks up segments by child flow
+  // ID, so copy the parent's mux segments to any child that has none.
+  if (
+    flow.format === "urn:x-nmos:format:multi" &&
+    Array.isArray(flow.flow_collection) &&
+    flowSegments[flow.id]?.length
+  ) {
+    for (const { id } of flow.flow_collection) {
+      if (!flowSegments[id]?.length) {
+        flowSegments[id] = flowSegments[flow.id];
+      }
+    }
+  }
 
   return {
     flow,
