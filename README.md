@@ -1,6 +1,8 @@
 # TAMS Store Browser
 
-A free, public web tool for browsing [Time-Addressable Media Store (TAMS)](https://github.com/bbc/tams) endpoints.
+This is a web application for browsing Avanade Azure implemented TAMS [Time-Addressable Media Store (TAMS)](https://github.com/bbc/tams) Media Stores. It provides a graphical UI which allows you to add TAMS stores, and then queries the TAMS endpoints to retrieve information on sources and flows within the store.
+Flow structure can be visualised by viewing diagrams which show source and flow details (multi flows, and single essence flows for video, audio, and image).
+Finally, a built-in Omakase player can be triggered to replay flows from the segment store. 
 
 ## Features
 
@@ -8,12 +10,11 @@ A free, public web tool for browsing [Time-Addressable Media Store (TAMS)](https
 - **Sources & Flows browser** -- Filterable, sortable tables with customisable columns
 - **Omakase Player** -- Advanced video player with timeline visualisation
 - **Diagram View** -- Interactive graph of TAMS entity relationships
-- **Zero backend** -- Everything runs in your browser; credentials stay in localStorage
 
 ## Quick Start
 
 1. Click **Manage Stores**
-2. Add your TAMS endpoint URL (and optional Bearer token)
+2. Add your TAMS endpoint URL (and optional Bearer token or OAUTH2 details)
 3. Browse Sources and Flows
 
 ## Local Development
@@ -33,7 +34,7 @@ npm run preview
 
 ## Attribution
 
-This project is a fork of [AWS TAMS Tools](https://github.com/aws-samples/time-addressable-media-store-tools), an open-source project released under the [MIT-0 license](LICENSE).
+This web app is derived from the AWS TAMS Tools, an open-source project released under the [MIT-0 license](LICENSE). It has been adapted by Avanade to run against our Azure TAMS implementation and media store.
 
 [TAMS (Time-Addressable Media Store)](https://github.com/bbc/tams) is a BBC initiative for time-addressable media.
 

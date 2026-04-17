@@ -11,11 +11,11 @@ import remarkGfm from "remark-gfm";
 import { useNavigate } from "react-router-dom";
 
 const pageMarkdown = `
-**TAMS Store Browser** lets you explore [Time-Addressable Media Store](https://github.com/bbc/tams) endpoints directly from your browser -- no backend, no infrastructure, no sign-up required.
+**TAMS Store Browser** lets you explore [Time-Addressable Media Store](https://github.com/bbc/tams) endpoints directly from your browser.
 
 ### Why this tool?
 
-This project is a fork of [AWS TAMS Tools](https://github.com/aws-samples/time-addressable-media-store-tools), an open-source project by **Amazon Web Services** (MIT-0 license) and which has been designed to be deployed as part of an AWS stack. This fork removes all AWS-specific code and dependencies, making it a lightweight, portable tool that can be used with any TAMS implementation.
+This project is a fork of AWS TAMS Tools, an open-source project (MIT-0 license). This fork redesigns the web app to align with Avanade's Azure deployment of TAMS API and Azure Blob for media storage.
 
 TAMS itself is a [BBC initiative](https://github.com/bbc/tams) for time-addressable media.
 
@@ -36,12 +36,6 @@ TAMS itself is a [BBC initiative](https://github.com/bbc/tams) for time-addressa
 ### Privacy
 
 All store endpoints and credentials are stored **only** in your browser's \`localStorage\`. Nothing is sent to any server other than the TAMS endpoints you configure.
-
-### Heads up
-
-This is a development and exploration tool -- not something you should point at a production TAMS store and hope for the best. It can delete flows and timeranges, and it will happily do so if you click the button. There is no undo.
-
-We provide this tool as-is, with no warranty or guarantees of any kind. CuttingRoom and the contributors to this project accept no responsibility for data loss, broken workflows, or any other damage resulting from its use. Use it for development, testing, and learning. If you need production tooling, build something with proper safeguards.
 `;
 
 const Home = () => {
